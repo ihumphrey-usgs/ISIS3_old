@@ -1,7 +1,7 @@
 /**
  * @file
- * $Revision$
- * $Date$
+ * $Revision: 7229 $
+ * $Date: 2016-11-10 21:04:46 -0700 (Thu, 10 Nov 2016) $
  *
  *   Unless noted otherwise, the portions of Isis written by the USGS are
  *   public domain. See individual third-party library and package descriptions
@@ -154,12 +154,13 @@ namespace Isis {
     }
   }
 
+
   /**
    * @brief Sets the sample/line values of the image to get the lat/lon values.
    *
    * @param sample Sample coordinate of the cube.
    * @param line Line coordinate of the cube.
-   * @return @b bool Returns True if the image was set successfully and Talse if it
+   * @return @b bool Returns True if the image was set successfully and False if it
    *              was not.
    */
   bool Camera::SetImage(const double sample, const double line) {
@@ -177,23 +178,17 @@ namespace Isis {
       // Convert to parent coordinate (remove crop, pad, shrink, enlarge)
       double parentSample = p_alphaCube->AlphaSample(sample);
       double parentLine = p_alphaCube->AlphaLine(line);
-      //cout << "\n\n\n\n\n\nCube: " << sample << " " << line << endl;
-      //cout << "alpha cube: " << parentSample << " " << parentLine << endl; //debug
-      //cout.precision(15);
-      //cout << "Time: " << Time().Et() << endl;
       bool success = false;
       success = p_detectorMap->SetParent(parentSample, parentLine);
       // Convert from parent to detector
       if (success) {
         double detectorSample = p_detectorMap->DetectorSample();
         double detectorLine   = p_detectorMap->DetectorLine();
-        // cout << "detector: " << detectorSample << " " << detectorLine << endl;  //debug
         success = p_focalPlaneMap->SetDetector(detectorSample, detectorLine);
         // Now Convert from detector to distorted focal plane
         if (success) {
           double focalPlaneX = p_focalPlaneMap->FocalPlaneX();
           double focalPlaneY = p_focalPlaneMap->FocalPlaneY();
-          // cout << "focal plane: " << focalPlaneX << " " << focalPlaneY << endl; //debug
           success = p_distortionMap->SetFocalPlane(focalPlaneX, focalPlaneY);
           // Remove optical distortion
           if (success) {
@@ -209,64 +204,12 @@ namespace Isis {
 
     // The projection is a sky map
     else if (p_projection->IsSky()) {
-      TProjection *tproj = (TProjection *) p_projection;
-      if (tproj->SetWorld(sample, line)) {
-        if (SetRightAscensionDeclination(tproj->Longitude(),
-                                        tproj->UniversalLatitude())) {
-          p_childSample = sample;
-          p_childLine = line;
-
-          return HasSurfaceIntersection();
-        }
-      }
+      return SetImageSkyMapProjection(sample, line, shape); 
     }
 
     // We have map projected camera model
     else {
-      Latitude lat;
-      Longitude lon;
-      Distance rad;
-      if (shape->name() != "Plane") { // this is the normal behavior
-        if (p_projection->SetWorld(sample, line)) {
-          TProjection *tproj = (TProjection *) p_projection;
-          lat = Latitude(tproj->UniversalLatitude(), Angle::Degrees);
-          lon = Longitude(tproj->UniversalLongitude(), Angle::Degrees);
-          rad = Distance(LocalRadius(lat, lon));
-          if (!rad.isValid()) {
-            shape->setHasIntersection(false);
-            return false;
-          }
-          SurfacePoint surfPt(lat, lon, rad);
-          if (SetGround(surfPt)) {
-            p_childSample = sample;
-            p_childLine = line;
-
-            shape->setHasIntersection(true);
-            return true;
-          }
-        }
-      }
-      else { // shape is ring plane
-        if (p_projection->SetWorld(sample, line)) {
-          RingPlaneProjection *rproj = (RingPlaneProjection *) p_projection;
-          lat = Latitude(0.0, Angle::Degrees);
-          lon = Longitude(rproj->UniversalRingLongitude(), Angle::Degrees);
-          rad = Distance(rproj->UniversalRingRadius(),Distance::Meters);
-
-          if (!rad.isValid()) {
-            shape->setHasIntersection(false);
-            return false;
-          }
-          SurfacePoint surfPt(lat, lon, rad);
-          if (SetGround(surfPt)) {
-            p_childSample = sample;
-            p_childLine = line;
-
-            shape->setHasIntersection(true);
-            return true;
-          }
-        }
-      }
+      return SetImageMapProjection(sample, line, shape); 
     }
 
     // failure
@@ -274,7 +217,170 @@ namespace Isis {
     return false;
   }
 
+
   /**
+   * @brief Sets the sample/line values of the image to get the lat/lon values with
+   *        a time offset of deltaT.
+   *  
+   * Warning: The deltaT parameter was added specifically for pixel2map to use for 
+   * the Dawn VIR camera. It is used to adjust the pointing to its location at specific 
+   * times like the times at the beginning, middle, and end of exposure for a specific pixel, 
+   * when the correct deltaT can be determined to achieve these results. 
+   *  
+   * Do not use this verstion of SetImage with a deltaT unless you understand exactly what this 
+   * does.  
+   *  
+   * @param sample Sample coordinate of the cube.
+   * @param line Line coordinate of the cube. 
+   * @param deltaT seconds from the center exposure time 
+   *  
+   * @return @b bool Returns True if the image was set successfully and False if it
+   *              was not.
+   */
+  bool Camera::SetImage(const double sample, const double line, const double deltaT) {
+    p_childSample = sample;
+    p_childLine = line;
+    p_pointComputed = true;
+
+    // get shape
+    // TODO: we need to validate this pointer (somewhere)
+    ShapeModel *shape = target()->shape();
+    shape->clearSurfacePoint();  // Set initial condition for ShapeModel
+
+    // Case of no map projection
+    if (p_projection == NULL || p_ignoreProjection) {
+      // Convert to parent coordinate (remove crop, pad, shrink, enlarge)
+      double parentSample = p_alphaCube->AlphaSample(sample);
+      double parentLine = p_alphaCube->AlphaLine(line);
+      bool success = false;
+      success = p_detectorMap->SetParent(parentSample, parentLine, deltaT);
+      // Convert from parent to detector
+      if (success) {
+        double detectorSample = p_detectorMap->DetectorSample();
+        double detectorLine   = p_detectorMap->DetectorLine();
+        success = p_focalPlaneMap->SetDetector(detectorSample, detectorLine);
+        // Now Convert from detector to distorted focal plane
+        if (success) {
+          double focalPlaneX = p_focalPlaneMap->FocalPlaneX();
+          double focalPlaneY = p_focalPlaneMap->FocalPlaneY();
+          success = p_distortionMap->SetFocalPlane(focalPlaneX, focalPlaneY);
+          // Remove optical distortion
+          if (success) {
+            // Map to the ground
+            double x = p_distortionMap->UndistortedFocalPlaneX();
+            double y = p_distortionMap->UndistortedFocalPlaneY();
+            double z = p_distortionMap->UndistortedFocalPlaneZ();
+            return p_groundMap->SetFocalPlane(x, y, z);
+          }
+        }
+      }
+    }
+
+    // The projection is a sky map
+    else if (p_projection->IsSky()) {
+      return SetImageSkyMapProjection(sample, line, shape); 
+    }
+    
+    // We have map projected camera model
+    else {
+      return SetImageMapProjection(sample, line, shape); 
+    }
+
+    // failure
+    shape->clearSurfacePoint();
+    return false;
+  }
+
+
+/**
+ * @brief Sets the sample/line values of the image to get the lat/lon values for a Map Projected 
+ * image. 
+ *  
+ * @param sample Sample coordinate of the cube
+ * @param line Line coordinate of the cube
+ * @param shape shape of the target
+ * 
+ * @return bool Returns True if the image was set successfully and False if it
+ *              was not.
+ */
+  bool Camera::SetImageMapProjection(const double sample, const double line, ShapeModel *shape) {
+    Latitude lat;
+    Longitude lon;
+    Distance rad;
+    if (shape->name() != "Plane") { // this is the normal behavior
+      if (p_projection->SetWorld(sample, line)) {
+        TProjection *tproj = (TProjection *) p_projection;
+        lat = Latitude(tproj->UniversalLatitude(), Angle::Degrees);
+        lon = Longitude(tproj->UniversalLongitude(), Angle::Degrees);
+        rad = Distance(LocalRadius(lat, lon));
+        if (!rad.isValid()) {
+          shape->setHasIntersection(false);
+          return false;
+        }
+        SurfacePoint surfPt(lat, lon, rad);
+        if (SetGround(surfPt)) {
+          p_childSample = sample;
+          p_childLine = line;
+
+          shape->setHasIntersection(true);
+          return true;
+        }
+      }
+    }
+    else { // shape is ring plane
+      if (p_projection->SetWorld(sample, line)) {
+        RingPlaneProjection *rproj = (RingPlaneProjection *) p_projection;
+        lat = Latitude(0.0, Angle::Degrees);
+        lon = Longitude(rproj->UniversalRingLongitude(), Angle::Degrees);
+        rad = Distance(rproj->UniversalRingRadius(),Distance::Meters);
+
+        if (!rad.isValid()) {
+          shape->setHasIntersection(false);
+          return false;
+        }
+        SurfacePoint surfPt(lat, lon, rad);
+        if (SetGround(surfPt)) {
+          p_childSample = sample;
+          p_childLine = line;
+
+          shape->setHasIntersection(true);
+          return true;
+        }
+      }
+    }
+    shape->clearSurfacePoint();
+    return false; 
+  }
+
+
+/**
+ * @brief Sets the sample/line values of the image to get the lat/lon values for a Skymap Projected 
+ * image. 
+ *  
+ * @param sample Sample coordinate of the cube
+ * @param line Line coordinate of the cube
+ * @param shape shape of the target
+ * 
+ * @return bool Returns True if the image was set successfully and False if it
+ *              was not.
+ */
+  bool Camera::SetImageSkyMapProjection(const double sample, const double line, ShapeModel *shape) {
+    TProjection *tproj = (TProjection *) p_projection;
+    if (tproj->SetWorld(sample, line)) {
+      if (SetRightAscensionDeclination(tproj->Longitude(),
+                                      tproj->UniversalLatitude())) {
+        p_childSample = sample;
+        p_childLine = line;
+
+        return HasSurfaceIntersection();
+      }
+    }
+    shape->clearSurfacePoint();
+    return false; 
+  }
+
+
+ /**
    * Sets the lat/lon values to get the sample/line values
    *
    * @param latitude Latitude coordinate of the point
@@ -1869,12 +1975,11 @@ namespace Isis {
     double lat = UniversalLatitude();
     // We are in northern hemisphere
     if (lat >= 0.0) {
-      return ComputeAzimuth(LocalRadius(90.0, 0.0), 90.0, 0.0);
+      return ComputeAzimuth(90.0, 0.0);
     }
     // We are in southern hemisphere
     else {
-      double azimuth = ComputeAzimuth(LocalRadius(-90.0, 0.0),
-                                      -90.0, 0.0) + 180.0;
+      double azimuth = ComputeAzimuth(-90.0, 0.0) + 180.0;
       if (azimuth > 360.0) azimuth = azimuth - 360.0;
       return azimuth;
     }
@@ -1890,8 +1995,9 @@ namespace Isis {
   double Camera::SunAzimuth() {
     double lat, lon;
     subSolarPoint(lat, lon);
-    return ComputeAzimuth(LocalRadius(lat, lon), lat, lon);
+    return ComputeAzimuth(lat, lon);
   }
+
 
   /**
    * Return the Spacecraft Azimuth
@@ -1903,8 +2009,9 @@ namespace Isis {
   double Camera::SpacecraftAzimuth() {
     double lat, lon;
     subSpacecraftPoint(lat, lon);
-    return ComputeAzimuth(LocalRadius(lat, lon), lat, lon);
+    return ComputeAzimuth(lat, lon);
   }
+
 
   /**
    * Computes the image azimuth value from your current position (origin) to a point of interest
@@ -2006,8 +2113,7 @@ namespace Isis {
    *   @todo Write PushState and PopState method to ensure the internals of the class are set based
    *         on SetImage or SetGround
    */
-  double Camera::ComputeAzimuth(Distance radius,
-                                const double lat, const double lon) {
+  double Camera::ComputeAzimuth(const double lat, const double lon) {
     // Make sure we are on the planet, if not, north azimuth is meaningless
     if (!HasSurfaceIntersection()) return Isis::Null;
 
@@ -2156,6 +2262,7 @@ namespace Isis {
     return azimuth;
   }
 
+
   /**
    * Return the off nadir angle in degrees.
    *
@@ -2180,6 +2287,7 @@ namespace Isis {
 
     return c;
   }
+
 
   /**
    * Computes and returns the ground azimuth between the ground point and
@@ -2308,6 +2416,7 @@ namespace Isis {
     p_distortionMap = map;
   }
 
+
   /**
    * Sets the Focal Plane Map. This object will take ownership of the focal plane
    * map pointer.
@@ -2321,6 +2430,7 @@ namespace Isis {
 
     p_focalPlaneMap = map;
   }
+
 
   /**
    * Sets the Detector Map. This object will take ownership of the detector map
@@ -2336,6 +2446,7 @@ namespace Isis {
     p_detectorMap = map;
   }
 
+
   /**
    * Sets the Ground Map. This object will take ownership of the ground map
    * pointer.
@@ -2350,6 +2461,7 @@ namespace Isis {
     p_groundMap = map;
   }
 
+
   /**
    * Sets the Sky Map. This object will take ownership of the sky map pointer.
    *
@@ -2362,6 +2474,7 @@ namespace Isis {
 
     p_skyMap = map;
   }
+
 
   /**
    * This loads the spice cache big enough for this image. The default cache size
@@ -2458,6 +2571,7 @@ namespace Isis {
     return ephemerisTimes;
   }
 
+
   /**
    * This method calculates the spice cache size. This method finds the number
    * of lines in the beta cube and adds 1, since we need at least 2 points for
@@ -2542,6 +2656,7 @@ namespace Isis {
     p_geometricTilingEndSize = endSize;
   }
 
+
   /**
    * This will get the geometric tiling hint; these values are typically used for
    * ProcessRubberSheet::SetTiling(...).
@@ -2575,6 +2690,7 @@ namespace Isis {
     return true;
   }
 
+
   /**
    * Checks to see if the camera object has a projection
    *
@@ -2583,7 +2699,8 @@ namespace Isis {
    */
   bool Camera::HasProjection() {
     return p_projection != 0;
-  }
+    }
+
 
   /**
    * Virtual method that checks if the band is independent
@@ -2595,6 +2712,7 @@ namespace Isis {
     return true;
   }
 
+
   /**
    * Returns the reference band
    *
@@ -2603,6 +2721,7 @@ namespace Isis {
   int Camera::ReferenceBand() const {
     return p_referenceBand;
   }
+
 
   /**
    * Checks to see if the Camera object has a reference band
@@ -2614,6 +2733,7 @@ namespace Isis {
     return p_referenceBand != 0;
   }
 
+
   /**
    * Virtual method that sets the band number
    *
@@ -2622,6 +2742,7 @@ namespace Isis {
   void Camera::SetBand(const int band) {
     p_childBand = band;
   }
+
 
   /**
    * Returns the current sample number
@@ -2632,6 +2753,7 @@ namespace Isis {
     return p_childSample;
   }
 
+
   /**
    * Returns the current band
    *
@@ -2641,6 +2763,7 @@ namespace Isis {
     return p_childBand;
   }
 
+
   /**
    * Returns the current line number
    *
@@ -2649,6 +2772,8 @@ namespace Isis {
    double Camera::Line() {
     return p_childLine;
   }
+
+
   /**
    * Returns the resolution of the camera
    *
@@ -2670,6 +2795,7 @@ namespace Isis {
     return p_focalLength;
   }
 
+
   /**
    * Returns the pixel pitch
    *
@@ -2678,6 +2804,7 @@ namespace Isis {
    double Camera::PixelPitch() const {
     return p_pixelPitch;
   }
+
 
   /**
    * Returns the pixel ifov offsets from center of pixel, which defaults to the
@@ -2710,6 +2837,7 @@ namespace Isis {
     return p_samples;
   }
 
+
   /**
    * Returns the number of lines in the image
    *
@@ -2718,6 +2846,7 @@ namespace Isis {
    int Camera::Lines() const {
     return p_lines;
   }
+
 
   /**
    * Returns the number of bands in the image
@@ -2728,6 +2857,7 @@ namespace Isis {
     return p_bands;
   }
 
+
   /**
    * Returns the number of lines in the parent alphacube
    *
@@ -2737,6 +2867,7 @@ namespace Isis {
     return p_alphaCube->AlphaLines();
   }
 
+
   /**
    * Returns the number of samples in the parent alphacube
    *
@@ -2745,6 +2876,8 @@ namespace Isis {
    int Camera::ParentSamples() const {
     return p_alphaCube->AlphaSamples();
   }
+
+
   /**
    * Returns a pointer to the CameraDistortionMap object
    *
@@ -2753,6 +2886,7 @@ namespace Isis {
   CameraDistortionMap *Camera::DistortionMap() {
     return p_distortionMap;
   }
+
 
   /**
    * Returns a pointer to the CameraFocalPlaneMap object
@@ -2763,6 +2897,7 @@ namespace Isis {
     return p_focalPlaneMap;
   }
 
+
   /**
    * Returns a pointer to the CameraDetectorMap object
    *
@@ -2772,6 +2907,7 @@ namespace Isis {
     return p_detectorMap;
   }
 
+
   /**
    * Returns a pointer to the CameraGroundMap object
    *
@@ -2780,6 +2916,7 @@ namespace Isis {
   CameraGroundMap *Camera::GroundMap() {
     return p_groundMap;
   }
+
 
   /**
    * Returns a pointer to the CameraSkyMap object
@@ -2965,6 +3102,35 @@ namespace Isis {
 
     SetImage(orgSample, orgLine);
     return celestialNorthClockAngle;
+  }
+
+
+  /**
+   * Return the exposure duration for the pixel that the camera is set to.
+   * 
+   * @return @b double The exposure duration in seconds for the pixel that the camera is set to.
+   */
+  double Camera::exposureDuration() const {
+    return p_detectorMap->exposureDuration(p_childSample, p_childLine, p_childBand);
+  }
+
+
+  /**
+   * Return the exposure duration for the pixel at the given line, sample and band.
+   * 
+   * @param sample The sample of the desired pixel.
+   * @param line The line of the desired pixel.
+   * @param band The band of the desired pixel. Defaults to 1.
+   * 
+   * @return @b double The exposure duration for the desired pixel in seconds.
+   */
+  double Camera::exposureDuration(const double sample, const double line, const int band) const {
+
+    //If band defaults to -1, use the camera's stored band.
+    if (band < 0) {
+      return p_detectorMap->exposureDuration(sample, line, p_childBand);
+    }
+    return p_detectorMap->exposureDuration(sample, line, band);
   }
 
 // end namespace isis

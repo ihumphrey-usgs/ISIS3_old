@@ -598,7 +598,7 @@ void LoadPvl() {
             ui.PutAsString("HGA", os.str().c_str());
           }
         }
-  
+
         if (atmVal != "ANISOTROPIC1" && atmVal != "ANISOTROPIC2" &&
             atmVal != "HAPKEATM1" && atmVal != "HAPKEATM2" &&
             atmVal != "ISOTROPIC1" && atmVal != "ISOTROPIC2") {
@@ -621,7 +621,7 @@ void IsisMain() {
   // get QString of parameter changes to make
   QString changePar = (QString)ui.GetString("CHNGPAR");
   changePar = changePar.toUpper();
-  changePar.simplified();
+  (void)changePar.simplified();  // cast to void to silence unused result warning
   changePar.replace(" =","=");
   changePar.replace("= ","=");
   changePar.remove('"');
@@ -640,7 +640,7 @@ void IsisMain() {
         QString message = "The value you entered for CHNGPAR is invalid. You must enter pairs of ";
         message += "data that are formatted as parname=value and each pair is separated by spaces.";
         throw IException(IException::User, message, _FILEINFO_);
-      } 
+      }
       parMap[parvalList.at(0)] = parvalList.at(1);
     }
   }
@@ -1549,7 +1549,7 @@ void IsisMain() {
                  addKeyword(PvlKeyword("ZEROB0STANDARD","FALSE"),Pvl::Replace);
       }
     } else if (!toPhtPvl.findObject("PhotometricModel").findGroup("Algorithm").
-                 hasKeyword("ZEROB0STANDARD")) { 
+                 hasKeyword("ZEROB0STANDARD")) {
       toPhtPvl.findObject("PhotometricModel").findGroup("Algorithm").
                addKeyword(PvlKeyword("ZEROB0STANDARD","TRUE"),Pvl::Replace);
     }
@@ -1803,7 +1803,7 @@ void IsisMain() {
       phaseCai = ui.GetInputAttribute("PHASE_ANGLE_FILE");
       p.SetInputCube(ui.GetFileName("PHASE_ANGLE_FILE"), phaseCai);
       usePhasefile = true;
-    } 
+    }
     else {
       phaseAngle = ui.GetDouble("PHASE_ANGLE");
     }
@@ -1886,7 +1886,6 @@ void photomet(Buffer &in, Buffer &out) {
 
     // otherwise, compute angle values
     else {
-
       bool success = true;
       if (angleSource == "CENTER_FROM_IMAGE" ||
           angleSource == "CENTER_FROM_LABEL" ||
@@ -1918,22 +1917,34 @@ void photomet(Buffer &in, Buffer &out) {
       if(!success) {
         out[i] = NULL8;
       }
-      else if(deminc >= 90.0 || demema >= 90.0) {
-        out[i] = NULL8;
-      }
-      // if angles greater than max allowed by user, set to null
-      else if(usedem && (deminc > maxinc || demema > maxema)) {
-        out[i] = NULL8;
-      }
-      else if(!usedem && (ellipsoidinc > maxinc || ellipsoidema > maxema)) {
-        out[i] = NULL8;
-      }
       // otherwise, do photometric correction
       else {
         pho->Compute(ellipsoidpha, ellipsoidinc, ellipsoidema, deminc, demema, in[i], out[i], mult, base);
       }
     }
   }
+  // Trim
+  if (!usedem) {
+    cam->IgnoreElevationModel(true);
+  }
+  double trimInc = 0, trimEma = 0;
+  //bool success = true;
+  for (int i = 0; i < in.size(); i++) {
+    // if off the target, set to null
+    if(!cam->SetImage(in.Sample(i), in.Line(i))) {
+      out[i] = NULL8;
+      //success = false;
+    }
+    else {
+      trimInc = cam->IncidenceAngle();
+      trimEma = cam->EmissionAngle();
+    }
+    
+    if(trimInc > maxinc || trimEma > maxema) {
+        out[i] = NULL8;
+    }
+  }
+  cam->IgnoreElevationModel(false);
 }
 
 /**
@@ -1963,7 +1974,7 @@ void photometWithBackplane(std::vector<Isis::Buffer *> &in, std::vector<Isis::Bu
   Buffer &emissionbp = *in[index];
 
   Buffer &outimage = *out[0];
-    
+
   double deminc=0., demema=0., mult=0., base=0.;
   double ellipsoidpha=0., ellipsoidinc=0., ellipsoidema=0.;
 
@@ -2000,7 +2011,7 @@ void photometWithBackplane(std::vector<Isis::Buffer *> &in, std::vector<Isis::Bu
       }
       else {
         ellipsoidema = emissionAngle;
-      } 
+      }
       deminc = ellipsoidinc;
       demema = ellipsoidema;
 
