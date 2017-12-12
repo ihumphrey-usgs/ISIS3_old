@@ -23,7 +23,7 @@
  *   http://www.usgs.gov/privacy.html.
  */
 
-#include <string>
+#include <QString>
 
 #include <QList>
 #include <QSharedPointer>
@@ -129,6 +129,8 @@ namespace Isis {
    *                           message for this error was very similar to the caught exception
    *                           to which it is appended. References #3892
    *  @history 2017-12-11 Jeannie Backer & Jesse Mapel - Created class skeleton for refactor.
+   *  @history 2017-12-11 Jeannie Backer - Added VersionedControlPoints.
+   *           refactor.
    */
   class ControlNetVersioner {
     public:
@@ -155,6 +157,64 @@ namespace Isis {
       ControlNetVersioner(const ControlNetVersioner &other);
       ControlNetVersioner &operator=(const ControlNetVersioner &other);
 
+      struct ControlPointV0001 {
+      }
+      struct ControlPointV0002 {
+      }
+      struct ControlPointV0003 {
+      }
+      struct ControlPointV0004 {
+        QString   id;
+        QString   chooserName;
+        QString   datetime;
+        PointType type;
+        bool      editLock;
+        bool      ignored;
+        bool      jigsawRejected;
+
+        RadiusSource::Source aprioriRadiusSource;
+        FileName             aprioriRadiusSourceFile;
+
+        SurfacePointSource::Source aprioriSurfacePointSource;
+        FileName                   aprioriSurfacePointSourceFile; // apriorixyzsourcefile
+        SurfacePoint               aprioriSurfacePoint;           // apriorixyzsource
+        //???
+        CovarianceMatrix aprioriCovarianceMatrix;
+
+        SurfacePoint adjustedSurfacePoint;
+        CovarianceMatrix adjustedCovarianceMatrix;
+
+        QList < QSharedPointer<ControlMeasure> > measureList;
+        int   referenceIndex;
+      }
+
+      // v5 is non-existant???
+
+      struct ControlPointV0006 {
+        QString   id;
+        QString   chooserName;
+        QString   datetime;
+        PointType type;
+        bool      editLock;
+        bool      ignored;
+        bool      jigsawRejected;
+
+        RadiusSource::Source aprioriRadiusSource;
+        FileName             aprioriRadiusSourceFile;
+
+        SurfacePointSource::Source aprioriSurfacePointSource;
+        FileName                   aprioriSurfacePointSourceFile;
+        SurfacePoint               aprioriSurfacePoint;
+
+        SurfacePoint adjustedSurfacePoint;
+
+        QList < QSharedPointer<ControlMeasure> > measureList;
+        int   referenceIndex;
+      };
+
+      // v7 is typedef of v6... no changes yet
+
+
       void read(const FileName netFile);
 
       void readPvl(const Pvl &network);
@@ -168,13 +228,12 @@ namespace Isis {
       void readProtobufV0002(const FileName netFile);
       void readProtobufV0007(const FileName netFile);
 
-      QSharedPointer<ControlPoint> createPointFromV0001(const ControlPointV0001 point);
-      QSharedPointer<ControlPoint> createPointFromV0002(const ControlPointV0002 point);
-      QSharedPointer<ControlPoint> createPointFromV0003(const ControlPointV0003 point);
-      QSharedPointer<ControlPoint> createPointFromV0004(const ControlPointV0004 point);
-      QSharedPointer<ControlPoint> createPointFromV0005(const ControlPointV0005 point);
-      QSharedPointer<ControlPoint> createPointFromV0006(const ControlPointV0006 point);
-      QSharedPointer<ControlPoint> createPointFromV0007(const ControlPointV0007 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0001 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0002 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0003 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0004 point);
+      // v5 dne???
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0006 point);
 
       void createHeaderFromV0001(const ControlNetHeaderV0001);
       void createHeaderFromV0002(const ControlNetHeaderV0002);
@@ -193,6 +252,7 @@ namespace Isis {
                                                            read in from a file or
                                                            ready to be written out
                                                            to a file.*/
+
   };
 }
 

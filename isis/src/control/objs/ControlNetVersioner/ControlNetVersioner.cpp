@@ -138,38 +138,57 @@ namespace Isis {
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0001(const ControlPointV0001 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0001 point){
+    return createPointFromV0002(newPoint);
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0002(const ControlPointV0002 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0002 point){
+    return createPointFromV0003(newPoint);
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0003(const ControlPointV0003 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0003 point){
+    return createPointFromV0004(newPoint);
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0004(const ControlPointV0004 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0004 point){
+    return createPointFromV0006(newPoint);
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0005(const ControlPointV0005 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0006 point){
 
-  }
+    QSharedPointer<ControlPoint> controlPoint = new QSharedPointer<ControlPoint>(point.id);
+    controlPoint->SetChooserName(point.chooserName);
+    controlPoint->SetDateTime(point.dateTime);
+    controlPoint->SetType(point.type);
+    controlPoint->SetIgnored(point.ignored);
+    controlPoint->SetRejected(point.jigsawRejected);
 
+    controlPoint->SetAprioriRadiusSource(point.aprioriRadiusSource);
+    controlPoint->SetAprioriRadiusSourceFile(point.aprioriRadiusSourceFileName.expanded());
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0006(const ControlPointV0006 point){
+    controlPoint->SetAprioriSurfacePointSource(point.aprioriSurfacePointSource);
+    controlPoint->SetAprioriSurfacePointSourceFile(point.aprioriSurfacePointFileName.expanded());
+    controlPoint->SetAprioriSurfacePoint(point.aprioriSurfacePoint);
 
-  }
+    controlPoint->SetAdjustedSurfacePoint(point.adjustedSurfacePoint);
 
+    for (int m = 0 ; m < point.measureList.size() ; m++) {
+      AddMeasure(point.measureList(m));
+    }
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0007(const ControlPointV0007 point){
+    controlPoint->SetRefMeasure(point.referenceindex);
 
+    // Set edit lock last
+    controlPoint.SetEditLock(point.editLock);
+    return controlPoint;
   }
 
 
