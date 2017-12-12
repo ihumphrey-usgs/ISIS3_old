@@ -27,6 +27,7 @@
 
 #include <QList>
 #include <QSharedPointer>
+#include <QVector>
 
 #include "ControlPoint.h"
 
@@ -129,8 +130,8 @@ namespace Isis {
    *                           message for this error was very similar to the caught exception
    *                           to which it is appended. References #3892
    *  @history 2017-12-11 Jeannie Backer & Jesse Mapel - Created class skeleton for refactor.
-   *  @history 2017-12-11 Jeannie Backer - Added VersionedControlPoints.
-   *           refactor.
+   *  @history 2017-12-11 Jesse Mapel - Added VersionedControlNetHeaders.
+   *  @history 2017-12-13 Jeannie Backer - Added VersionedControlPoints.
    */
   class ControlNetVersioner {
     public:
@@ -214,6 +215,22 @@ namespace Isis {
 
       // v7 is typedef of v6... no changes yet
 
+      // Private ControlNetHeader structs for versioning
+      // TODO Document these for doxygen. JAM
+      struct ControlNetHeaderV0001 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+      };
+      typedef ControlNetHeaderV0002 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0003 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0004 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0005 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0006 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0007 ControlNetHeaderV0001;
 
       void read(const FileName netFile);
 
@@ -235,13 +252,7 @@ namespace Isis {
       // v5 dne???
       QSharedPointer<ControlPoint> createPoint(const ControlPointV0006 point);
 
-      void createHeaderFromV0001(const ControlNetHeaderV0001);
-      void createHeaderFromV0002(const ControlNetHeaderV0002);
-      void createHeaderFromV0003(const ControlNetHeaderV0003);
-      void createHeaderFromV0004(const ControlNetHeaderV0004);
-      void createHeaderFromV0005(const ControlNetHeaderV0005);
-      void createHeaderFromV0006(const ControlNetHeaderV0006);
-      void createHeaderFromV0007(const ControlNetHeaderV0007);
+      void setHeader(const ControlNetHeaderV0001 header);
 
       void writeHeader(ZeroCopyInputStream *fileStream);
       void writeFirstPoint(ZeroCopyInputStream *fileStream);
