@@ -43,177 +43,276 @@ namespace Isis {
   }
 
 
-  QString ControlNetVersioner::netId() const{
+  QString ControlNetVersioner::netId() const {
 
   }
 
 
-  QString ControlNetVersioner::targetName() const{
+  QString ControlNetVersioner::targetName() const {
 
   }
 
 
-  QString ControlNetVersioner::creationDate() const{
+  QString ControlNetVersioner::creationDate() const {
 
   }
 
 
-  QString ControlNetVersioner::lastModificationDate() const{
+  QString ControlNetVersioner::lastModificationDate() const {
 
   }
 
 
-  QString ControlNetVersioner::description() const{
+  QString ControlNetVersioner::description() const {
 
   }
 
 
-  QString ControlNetVersioner::userName() const{
+  QString ControlNetVersioner::userName() const {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::takeFirstPoint(){
+  QSharedPointer<ControlPoint> ControlNetVersioner::takeFirstPoint() {
 
   }
 
 
-  void ControlNetVersioner::write(FileName netFile){
+  void ControlNetVersioner::write(FileName netFile) {
 
   }
 
 
-  Pvl &ControlNetVersioner::toPvl(){
+  Pvl &ControlNetVersioner::toPvl() {
 
   }
 
 
-  void ControlNetVersioner::read(const FileName netFile){
+  void ControlNetVersioner::read(const FileName netFile) {
 
   }
 
 
-  void ControlNetVersioner::readPvl(const Pvl &network){
+  void ControlNetVersioner::readPvl(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readPvlV0001(const Pvl &network){
+  void ControlNetVersioner::readPvlV0001(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readPvlV0002(const Pvl &network){
+  void ControlNetVersioner::readPvlV0002(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readPvlV0003(const Pvl &network){
+  void ControlNetVersioner::readPvlV0003(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readPvlV0004(const Pvl &network){
+  void ControlNetVersioner::readPvlV0004(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readProtobuf(const Pvl &header, const FileName netFile){
+  void ControlNetVersioner::readProtobuf(const Pvl &header, const FileName netFile) {
 
   }
 
 
-  void ControlNetVersioner::readProtobufV0001(const FileName netFile){
+  void ControlNetVersioner::readProtobufV0001(const FileName netFile) {
 
   }
 
 
-  void ControlNetVersioner::readProtobufV0002(const FileName netFile){
+  void ControlNetVersioner::readProtobufV0002(const FileName netFile) {
 
   }
 
 
-  void ControlNetVersioner::readProtobufV0007(const FileName netFile){
+  void ControlNetVersioner::readProtobufV0007(const FileName netFile) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0001(const ControlPointV0001 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0001(const ControlPointV0001 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0002(const ControlPointV0002 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0002(const ControlPointV0002 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0003(const ControlPointV0003 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0003(const ControlPointV0003 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0004(const ControlPointV0004 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0004(const ControlPointV0004 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0005(const ControlPointV0005 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0005(const ControlPointV0005 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0006(const ControlPointV0006 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0006(const ControlPointV0006 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0007(const ControlPointV0007 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0007(const ControlPointV0007 point) {
 
   }
 
 
-  void ControlNetVersioner::createHeaderFromV0001(const ControlNetHeaderV0001){
+  /**
+   * Create the internal header from a V0001 header. This will step the header
+   * version up until it reaches the latest version and then internalize it.
+   *
+   * The only update step is to convert MRO targetNames to simply Mars.
+   *
+   * @param header The V0001 header
+   */
+  void ControlNetVersioner::createHeaderFromV0001(const ControlNetHeaderV0001 header) {
+    ControlNetHeaderV0002 newHeader;
+    newHeader.networkID = header.networkID;
+    if (header.targetName..startsWith("MRO/")) {
+      newHeader.targetName = "Mars";
+    }
+    else {
+      newHeader.targetName = header.targetName;
+    }
+    newHeader.created = header.created;
+    newHeader.lastModified = header.lastModified;
+    newHeader.description = header.description;
+    newHeader.username = header.username;
+
+    createHeaderFromV0002(newHeader);
+  }
+
+
+  /**
+   * Create the internal header from a V0002 header. This will step the header
+   * version up until it reaches the latest version and then internalize it.
+   *
+   * @param header The V0002 header
+   */
+  void ControlNetVersioner::createHeaderFromV0002(const ControlNetHeaderV0002 header) {
+    ControlNetHeaderV0003 newHeader;
+    newHeader.networkID = header.networkID;
+    newHeader.targetName = header.targetName;
+    newHeader.created = header.created;
+    newHeader.lastModified = header.lastModified;
+    newHeader.description = header.description;
+    newHeader.username = header.username;
+
+    createHeaderFromV0003(newHeader);
+  }
+
+
+  /**
+   * Create the internal header from a V0003 header. This will step the header
+   * version up until it reaches the latest version and then internalize it.
+   *
+   * @param header The V0003 header
+   */
+  void ControlNetVersioner::createHeaderFromV0003(const ControlNetHeaderV0003 header) {
+    ControlNetHeaderV0004 newHeader;
+    newHeader.networkID = header.networkID;
+    newHeader.targetName = header.targetName;
+    newHeader.created = header.created;
+    newHeader.lastModified = header.lastModified;
+    newHeader.description = header.description;
+    newHeader.username = header.username;
+
+    createHeaderFromV0004(newHeader);
+  }
+
+
+  /**
+   * Create the internal header from a V0004 header. This will step the header
+   * version up until it reaches the latest version and then internalize it.
+   *
+   * @param header The V0004 header
+   */
+  void ControlNetVersioner::createHeaderFromV0004(const ControlNetHeaderV0004 header) {
+    ControlNetHeaderV0005 newHeader;
+    newHeader.networkID = header.networkID;
+    newHeader.targetName = header.targetName;
+    newHeader.created = header.created;
+    newHeader.lastModified = header.lastModified;
+    newHeader.description = header.description;
+    newHeader.username = header.username;
+
+    createHeaderFromV0005(newHeader);
+  }
+
+
+  /**
+   * Create the internal header from a V0005 header. This will step the header
+   * version up until it reaches the latest version and then internalize it.
+   *
+   * @param header The V0005 header
+   */
+  void ControlNetVersioner::createHeaderFromV0005(const ControlNetHeaderV0005 header) {
+    ControlNetHeaderV0006 newHeader;
+    newHeader.networkID = header.networkID;
+    newHeader.targetName = header.targetName;
+    newHeader.created = header.created;
+    newHeader.lastModified = header.lastModified;
+    newHeader.description = header.description;
+    newHeader.username = header.username;
+
+    createHeaderFromV0006(newHeader);
+  }
+
+
+  /**
+   * Create the internal header from a V0006 header. This will step the header
+   * version up until it reaches the latest version and then internalize it.
+   *
+   * This does not fill the size list because it will never be needed.
+   *
+   * @param header The V0006 header
+   */
+  void ControlNetVersioner::createHeaderFromV0006(const ControlNetHeaderV0006 header) {
+    ControlNetHeaderV0007 newHeader;
+    newHeader.networkID = header.networkID;
+    newHeader.targetName = header.targetName;
+    newHeader.created = header.created;
+    newHeader.lastModified = header.lastModified;
+    newHeader.description = header.description;
+    newHeader.username = header.username;
+
+    createHeaderFromV0007(newHeader);
+  }
+
+
+  /**
+   * Create the internal header from a V0007 header. This will step the header
+   * version up until it reaches the latest version and then internalize it.
+   *
+   * @param header The V0007 header
+   */
+  void ControlNetVersioner::createHeaderFromV0007(const ControlNetHeaderV0007 header) {
+    m_header = header;
+  }
+
+
+  void ControlNetVersioner::writeHeader(ZeroCopyInputStream *fileStream) {
 
   }
 
 
-  void ControlNetVersioner::createHeaderFromV0002(const ControlNetHeaderV0002){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0003(const ControlNetHeaderV0003){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0004(const ControlNetHeaderV0004){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0005(const ControlNetHeaderV0005){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0006(const ControlNetHeaderV0006){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0007(const ControlNetHeaderV0007){
-
-  }
-
-
-  void ControlNetVersioner::writeHeader(ZeroCopyInputStream *fileStream){
-
-  }
-
-
-  void ControlNetVersioner::writeFirstPoint(ZeroCopyInputStream *fileStream){
+  void ControlNetVersioner::writeFirstPoint(ZeroCopyInputStream *fileStream) {
 
   }
 

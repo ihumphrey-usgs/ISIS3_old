@@ -27,6 +27,7 @@
 
 #include <QList>
 #include <QSharedPointer>
+#include <QVector>
 
 #include "ControlPoint.h"
 
@@ -155,6 +156,66 @@ namespace Isis {
       ControlNetVersioner(const ControlNetVersioner &other);
       ControlNetVersioner &operator=(const ControlNetVersioner &other);
 
+      // Private ControlNetHeader structs for versioning
+      // TODO we can probably use some typedef and inheritance to clean this up. JAM
+      struct ControlNetHeaderV0001 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+      };
+      struct ControlNetHeaderV0002 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+      };
+      struct ControlNetHeaderV0003 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+      };
+      struct ControlNetHeaderV0004 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+      };
+      struct ControlNetHeaderV0005 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+      };
+      struct ControlNetHeaderV0006 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+        QVector<int> pointMessageSizes;
+      };
+      struct ControlNetHeaderV0007 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+      };
+
       void read(const FileName netFile);
 
       void readPvl(const Pvl &network);
@@ -176,13 +237,13 @@ namespace Isis {
       QSharedPointer<ControlPoint> createPointFromV0006(const ControlPointV0006 point);
       QSharedPointer<ControlPoint> createPointFromV0007(const ControlPointV0007 point);
 
-      void createHeaderFromV0001(const ControlNetHeaderV0001);
-      void createHeaderFromV0002(const ControlNetHeaderV0002);
-      void createHeaderFromV0003(const ControlNetHeaderV0003);
-      void createHeaderFromV0004(const ControlNetHeaderV0004);
-      void createHeaderFromV0005(const ControlNetHeaderV0005);
-      void createHeaderFromV0006(const ControlNetHeaderV0006);
-      void createHeaderFromV0007(const ControlNetHeaderV0007);
+      void createHeaderFromV0001(const ControlNetHeaderV0001 header);
+      void createHeaderFromV0002(const ControlNetHeaderV0002 header);
+      void createHeaderFromV0003(const ControlNetHeaderV0003 header);
+      void createHeaderFromV0004(const ControlNetHeaderV0004 header);
+      void createHeaderFromV0005(const ControlNetHeaderV0005 header);
+      void createHeaderFromV0006(const ControlNetHeaderV0006 header);
+      void createHeaderFromV0007(const ControlNetHeaderV0007 header);
 
       void writeHeader(ZeroCopyInputStream *fileStream);
       void writeFirstPoint(ZeroCopyInputStream *fileStream);
