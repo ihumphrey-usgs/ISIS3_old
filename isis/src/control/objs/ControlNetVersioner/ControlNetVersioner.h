@@ -159,61 +159,16 @@ namespace Isis {
       ControlNetVersioner &operator=(const ControlNetVersioner &other);
 
       struct ControlPointV0001 {
+        PvlContainer container;
       }
-      struct ControlPointV0002 {
-      }
-      struct ControlPointV0003 {
-      }
-      struct ControlPointV0004 {
-        QString   id;
-        QString   chooserName;
-        QString   datetime;
-        PointType type;
-        bool      editLock;
-        bool      ignored;
-        bool      jigsawRejected;
+      typedef ControlPointV0002 ControlPointV0001;
+      typedef ControlPointV0003 ControlPointV0001;
+      typedef ControlPointV0004 ControlPointV0001;
+      typedef ControlPointV0005 ControlPointFileEntryV0002;//??? what to do???
+      typedef ControlPointV0006 ControlPointFileEntryV0002;
+      typedef ControlPointV0007 ControlPointFileEntryV0002;
 
-        RadiusSource::Source aprioriRadiusSource;
-        FileName             aprioriRadiusSourceFile;
-
-        SurfacePointSource::Source aprioriSurfacePointSource;
-        FileName                   aprioriSurfacePointSourceFile; // apriorixyzsourcefile
-        SurfacePoint               aprioriSurfacePoint;           // apriorixyzsource
-        //???
-        CovarianceMatrix aprioriCovarianceMatrix;
-
-        SurfacePoint adjustedSurfacePoint;
-        CovarianceMatrix adjustedCovarianceMatrix;
-
-        QList < QSharedPointer<ControlMeasure> > measureList;
-        int   referenceIndex;
-      }
-
-      // v5 is non-existant???
-
-      struct ControlPointV0006 {
-        QString   id;
-        QString   chooserName;
-        QString   datetime;
-        PointType type;
-        bool      editLock;
-        bool      ignored;
-        bool      jigsawRejected;
-
-        RadiusSource::Source aprioriRadiusSource;
-        FileName             aprioriRadiusSourceFile;
-
-        SurfacePointSource::Source aprioriSurfacePointSource;
-        FileName                   aprioriSurfacePointSourceFile;
-        SurfacePoint               aprioriSurfacePoint;
-
-        SurfacePoint adjustedSurfacePoint;
-
-        QList < QSharedPointer<ControlMeasure> > measureList;
-        int   referenceIndex;
-      };
-
-      // v7 is typedef of v6... no changes yet
+      typedef ControlMeasureV0006 ControlPointV0006::Measure;//???
 
       // Private ControlNetHeader structs for versioning
       // TODO Document these for doxygen. JAM
@@ -251,6 +206,31 @@ namespace Isis {
       QSharedPointer<ControlPoint> createPoint(const ControlPointV0004 point);
       // v5 dne???
       QSharedPointer<ControlPoint> createPoint(const ControlPointV0006 point);
+      QSharedPointer<ControlMeasure> createMeasure(const ControlMeasureV0006 measure);
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointFileEntryV0002 &point,
+                void (ControlPointFileEntryV0002::*setter)(bool));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointFileEntryV0002 &point,
+                void (ControlPointFileEntryV0002::*setter)(double));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointFileEntryV0002 &point,
+                void (ControlPointFileEntryV0002::*setter)(const std::string&));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointFileEntryV0002::Measure &measure,
+                void (ControlPointFileEntryV0002::Measure::*setter)(bool));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointFileEntryV0002::Measure &measure,
+                void (ControlPointFileEntryV0002::Measure::*setter)(double));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointFileEntryV0002::Measure &measure,
+                void (ControlPointFileEntryV0002::Measure::*setter)(const std::string &));
 
       void setHeader(const ControlNetHeaderV0001 header);
 
@@ -267,4 +247,57 @@ namespace Isis {
   };
 }
 
+#endif
+#if 0
+      struct ControlPointV0004 {
+        QString id;
+        QString chooserName;
+        QString datetime;
+        int     type;
+        bool    editLock;
+        bool    ignored;
+        bool    jigsawRejected;
+
+        QString aprioriRadiusSource;
+        QString aprioriRadiusSourceFile;
+
+        QString aprioriSurfacePointSource;
+        QString aprioriSurfacePointSourceFile; // apriorixyzsourcefile
+        // SurfacePoint aprioriSurfacePoint;   // apriorixyzsource
+        double     aprioriX; // <meters>
+        double     aprioriY; // <meters>
+        double     aprioriZ; // <meters>
+        bool       latitudeConstrained;
+        bool       longitudeConstrained;
+        bool       radiusConstrained;
+        QVector<double> aprioriCovarianceMatrix;
+
+        // SurfacePoint adjustedSurfacePoint;
+        double adjustedX;
+        double adjustedY;
+        double adjustedZ;
+        QVector<double> adjustedCovarianceMatrix;
+
+        struct CPV4Measure {
+          QString serialnumber;
+          int     type;
+          double  sample;
+          double  line;
+          double  sampleResidual;
+          double  lineResidual;
+          QString choosername;
+          QString datetime;
+          bool    editLock;
+          bool    ignore;
+          bool    jigsawRejected;
+          double  diameter;
+          double apriorisample;
+          double aprioriline;
+          double samplesigma;
+          double linesigma;
+        };
+
+        QList <CPV4Measure> measureList;
+        int   referenceIndex;
+      }
 #endif
