@@ -23,7 +23,7 @@
  *   http://www.usgs.gov/privacy.html.
  */
 
-#include <string>
+#include <QString>
 
 #include <QList>
 #include <QSharedPointer>
@@ -130,7 +130,14 @@ namespace Isis {
    *                           message for this error was very similar to the caught exception
    *                           to which it is appended. References #3892
    *  @history 2017-12-11 Jeannie Backer & Jesse Mapel - Created class skeleton for refactor.
+<<<<<<< HEAD
    *  @history 2017-12-12 Kristin Berry - Added initial toPvl for refactor. 
+=======
+   *  @history 2017-12-11 Jesse Mapel - Added VersionedControlNetHeaders.
+   *  @history 2017-12-12 Jeannie Backer - Added VersionedControlPoints.
+   *  @history 2017-12-12 Jeannie Backer - Implemented createPoint() methods.
+   *  @history 2017-12-13 Jeannie Backer - Added target radii to createPoint(V0006).
+>>>>>>> 1e77a0e2c0418311d9c4500ccad4ff47917a9936
    */
   class ControlNetVersioner {
     public:
@@ -156,6 +163,18 @@ namespace Isis {
       ControlNetVersioner();
       ControlNetVersioner(const ControlNetVersioner &other);
       ControlNetVersioner &operator=(const ControlNetVersioner &other);
+
+      struct ControlPointV0001 {
+        PvlContainer container;
+      }
+      typedef ControlPointV0002 ControlPointV0001;
+      typedef ControlPointV0003 ControlPointV0001;
+      typedef ControlPointV0004 ControlPointV0001;
+      typedef ControlPointV0005 ControlPointFileEntryV0002;//??? what to do???
+      typedef ControlPointV0006 ControlPointFileEntryV0002;
+      typedef ControlPointV0007 ControlPointFileEntryV0002;
+
+      typedef ControlMeasureV0006 ControlPointV0006::Measure;//???
 
       // Private ControlNetHeader structs for versioning
       // TODO Document these for doxygen. JAM
@@ -187,13 +206,38 @@ namespace Isis {
       void readProtobufV0002(const FileName netFile);
       void readProtobufV0007(const FileName netFile);
 
-      QSharedPointer<ControlPoint> createPointFromV0001(const ControlPointV0001 point);
-      QSharedPointer<ControlPoint> createPointFromV0002(const ControlPointV0002 point);
-      QSharedPointer<ControlPoint> createPointFromV0003(const ControlPointV0003 point);
-      QSharedPointer<ControlPoint> createPointFromV0004(const ControlPointV0004 point);
-      QSharedPointer<ControlPoint> createPointFromV0005(const ControlPointV0005 point);
-      QSharedPointer<ControlPoint> createPointFromV0006(const ControlPointV0006 point);
-      QSharedPointer<ControlPoint> createPointFromV0007(const ControlPointV0007 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0001 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0002 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0003 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0004 point);
+      // v5 dne???
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0006 point);
+      QSharedPointer<ControlMeasure> createMeasure(const ControlMeasureV0006 measure);
+      // methods for converting pvl (v4) to protobuf (v6)
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointV0006 &point,
+                void (ControlMeasureV0006::*setter)(bool));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointV0006 &point,
+                void (ControlPointV0006::*setter)(double));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlPointV0006 &point,
+                void (ControlPointV0006::*setter)(const std::string&));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlMeasureV0006 &measure,
+                void (ControlMeasureV0006::*setter)(bool));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlMeasureV0006 &measure,
+                void (ControlMeasureV0006::*setter)(double));
+      void copy(PvlContainer &container,
+                QString keyName,
+                ControlMeasureV0006 &measure,
+                void (ControlMeasureV0006::*setter)(const std::string &));
 
       void setHeader(const ControlNetHeaderV0001 header);
 
@@ -206,7 +250,61 @@ namespace Isis {
                                                            read in from a file or
                                                            ready to be written out
                                                            to a file.*/
+
   };
 }
 
+#endif
+#if 0
+      struct ControlPointV0004 {
+        QString id;
+        QString chooserName;
+        QString datetime;
+        int     type;
+        bool    editLock;
+        bool    ignored;
+        bool    jigsawRejected;
+
+        QString aprioriRadiusSource;
+        QString aprioriRadiusSourceFile;
+
+        QString aprioriSurfacePointSource;
+        QString aprioriSurfacePointSourceFile; // apriorixyzsourcefile
+        // SurfacePoint aprioriSurfacePoint;   // apriorixyzsource
+        double     aprioriX; // <meters>
+        double     aprioriY; // <meters>
+        double     aprioriZ; // <meters>
+        bool       latitudeConstrained;
+        bool       longitudeConstrained;
+        bool       radiusConstrained;
+        QVector<double> aprioriCovarianceMatrix;
+
+        // SurfacePoint adjustedSurfacePoint;
+        double adjustedX;
+        double adjustedY;
+        double adjustedZ;
+        QVector<double> adjustedCovarianceMatrix;
+
+        struct CPV4Measure {
+          QString serialnumber;
+          int     type;
+          double  sample;
+          double  line;
+          double  sampleResidual;
+          double  lineResidual;
+          QString choosername;
+          QString datetime;
+          bool    editLock;
+          bool    ignore;
+          bool    jigsawRejected;
+          double  diameter;
+          double apriorisample;
+          double aprioriline;
+          double samplesigma;
+          double linesigma;
+        };
+
+        QList <CPV4Measure> measureList;
+        int   referenceIndex;
+      }
 #endif
