@@ -43,46 +43,45 @@ namespace Isis {
   }
 
 
-  QString ControlNetVersioner::netId() const{
+  QString ControlNetVersioner::netId() const {
 
   }
 
 
-  QString ControlNetVersioner::targetName() const{
+  QString ControlNetVersioner::targetName() const {
 
   }
 
 
-  QString ControlNetVersioner::creationDate() const{
+  QString ControlNetVersioner::creationDate() const {
 
   }
 
 
-  QString ControlNetVersioner::lastModificationDate() const{
+  QString ControlNetVersioner::lastModificationDate() const {
 
   }
 
 
-  QString ControlNetVersioner::description() const{
+  QString ControlNetVersioner::description() const {
 
   }
 
 
-  QString ControlNetVersioner::userName() const{
+  QString ControlNetVersioner::userName() const {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::takeFirstPoint(){
+  QSharedPointer<ControlPoint> ControlNetVersioner::takeFirstPoint() {
 
   }
 
 
-  void ControlNetVersioner::write(FileName netFile){
+  void ControlNetVersioner::write(FileName netFile) {
 
   }
 
-  
   //
   Pvl &ControlNetVersioner::toPvl(){
     Pvl pvl;
@@ -112,14 +111,14 @@ namespace Isis {
       }
     }
 
-    ControlPointFileEntryV0002 binaryPoint;
-    foreach(binaryPoint, *p_controlPoints) {
+    ControlPointFileEntryV0002 binaryPoint; // FIXME
+    foreach(binaryPoint, *m_points) {
       PvlObject pvlPoint("ControlPoint");
 
-      if (binaryPoint.type() == ControlPointFileEntryV0002::Fixed) {
+      if (binaryPoint.type() == ControlPointFileEntryV0002::Fixed) { //FIXME
         pvlPoint += PvlKeyword("PointType", "Fixed");
       }
-      else if (binaryPoint.type() == ControlPointFileEntryV0002::Constrained) {
+      else if (binaryPoint.type() == ControlPointFileEntryV0002::Constrained) { //FIXME
         pvlPoint += PvlKeyword("PointType", "Constrained");
       }
       else {
@@ -133,7 +132,6 @@ namespace Isis {
       if (binaryPoint.editlock()) {
         pvlPoint += PvlKeyword("EditLock", "True");
       }
-
       if (binaryPoint.ignore()) {
         pvlPoint += PvlKeyword("Ignore", "True");
       }
@@ -411,132 +409,114 @@ namespace Isis {
   }
 
 
-  void ControlNetVersioner::read(const FileName netFile){
+  void ControlNetVersioner::read(const FileName netFile) {
 
   }
 
 
-  void ControlNetVersioner::readPvl(const Pvl &network){
+  void ControlNetVersioner::readPvl(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readPvlV0001(const Pvl &network){
+  void ControlNetVersioner::readPvlV0001(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readPvlV0002(const Pvl &network){
+  void ControlNetVersioner::readPvlV0002(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readPvlV0003(const Pvl &network){
+  void ControlNetVersioner::readPvlV0003(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readPvlV0004(const Pvl &network){
+  void ControlNetVersioner::readPvlV0004(const Pvl &network) {
 
   }
 
 
-  void ControlNetVersioner::readProtobuf(const Pvl &header, const FileName netFile){
+  void ControlNetVersioner::readProtobuf(const Pvl &header, const FileName netFile) {
 
   }
 
 
-  void ControlNetVersioner::readProtobufV0001(const FileName netFile){
+  void ControlNetVersioner::readProtobufV0001(const FileName netFile) {
 
   }
 
 
-  void ControlNetVersioner::readProtobufV0002(const FileName netFile){
+  void ControlNetVersioner::readProtobufV0002(const FileName netFile) {
 
   }
 
 
-  void ControlNetVersioner::readProtobufV0007(const FileName netFile){
+  void ControlNetVersioner::readProtobufV0007(const FileName netFile) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0001(const ControlPointV0001 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0001(const ControlPointV0001 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0002(const ControlPointV0002 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0002(const ControlPointV0002 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0003(const ControlPointV0003 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0003(const ControlPointV0003 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0004(const ControlPointV0004 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0004(const ControlPointV0004 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0005(const ControlPointV0005 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0005(const ControlPointV0005 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0006(const ControlPointV0006 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0006(const ControlPointV0006 point) {
 
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0007(const ControlPointV0007 point){
+  QSharedPointer<ControlPoint> ControlNetVersioner::createPointFromV0007(const ControlPointV0007 point) {
 
   }
 
 
-  void ControlNetVersioner::createHeaderFromV0001(const ControlNetHeaderV0001){
+  /**
+   * Create the internal header from a V0001 header.
+   *
+   * The latest version is V0001, so this will check for an old issue with
+   * Mars target names and then internalize the header.
+   *
+   * @param header The V0001 header
+   */
+  void ControlNetVersioner::createHeader(const ControlNetHeaderV0001 header) {
+    m_header = header;
+
+    if (m_header.targetName.startsWith("MRO/")) {
+      m_header.targetName = "Mars";
+    }
+  }
+
+
+  void ControlNetVersioner::writeHeader(ZeroCopyInputStream *fileStream) {
 
   }
 
 
-  void ControlNetVersioner::createHeaderFromV0002(const ControlNetHeaderV0002){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0003(const ControlNetHeaderV0003){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0004(const ControlNetHeaderV0004){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0005(const ControlNetHeaderV0005){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0006(const ControlNetHeaderV0006){
-
-  }
-
-
-  void ControlNetVersioner::createHeaderFromV0007(const ControlNetHeaderV0007){
-
-  }
-
-
-  void ControlNetVersioner::writeHeader(ZeroCopyInputStream *fileStream){
-
-  }
-
-
-  void ControlNetVersioner::writeFirstPoint(ZeroCopyInputStream *fileStream){
+  void ControlNetVersioner::writeFirstPoint(ZeroCopyInputStream *fileStream) {
 
   }
 
