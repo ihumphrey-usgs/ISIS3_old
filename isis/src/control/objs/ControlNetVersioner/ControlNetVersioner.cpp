@@ -845,7 +845,7 @@ namespace Isis {
                                        Displacement(point.aprioriy(), Displacement::Meters),
                                        Displacement(point.aprioriz(), Displacement::Meters));
       if (point.aprioricovar_size() > 0) {
-        LinearAlgebra::UpperSymmetricMatrix aprioriCovarianceMatrix;
+        SymmetricMatrix aprioriCovarianceMatrix;
         aprioriCovarianceMatrix.resize(3);
         aprioriCovarianceMatrix.clear();
         aprioriCovarianceMatrix(0, 0) = point.aprioricovar(0);
@@ -897,7 +897,7 @@ namespace Isis {
                                         Displacement(point.adjustedz(), Displacement::Meters));
 
       if (point.adjustedcovar_size() > 0) {
-        LinearAlgebra::UpperSymmetricMatrix adjustedCovarianceMatrix;
+        SymmetricMatrix adjustedCovarianceMatrix;
         adjustedCovarianceMatrix.resize(3);
         adjustedCovarianceMatrix.clear();
         adjustedCovarianceMatrix(0, 0) = point.adjustedcovar(0);
