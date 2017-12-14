@@ -140,11 +140,19 @@ namespace Isis {
           break;
 
         case 2:
-          readPvlV0001(controlNetwork);
+          readPvlV0002(controlNetwork);
           break;
 
         case 3:
-          readPvlV0001(controlNetwork);
+          readPvlV0003(controlNetwork);
+          break;
+
+        case 4:
+          readPvlV0004(controlNetwork);
+          break;
+
+        case 5:
+          readPvlV0005(controlNetwork);
           break;
 
         default:
@@ -183,7 +191,7 @@ namespace Isis {
         PvlObject &pointObject = network.object(objectIndex);
         ControlPointV0001 point;
         //TODO Fill the ControlPointV0001 object from the PvlObject
-        m_points.append( createPointFromV0001(point) );
+        m_points.append( createPoint(point) );
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -222,7 +230,7 @@ namespace Isis {
         PvlObject &pointObject = network.object(objectIndex);
         ControlPointV0002 point;
         //TODO Fill the ControlPointV0002 object from the PvlObject
-        m_points.append( createPointFromV0002(point) );
+        m_points.append( createPoint(point) );
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -261,7 +269,7 @@ namespace Isis {
         PvlObject &pointObject = network.object(objectIndex);
         ControlPointV0003 point;
         //TODO Fill the ControlPointV0003 object from the PvlObject
-        m_points.append( createPointFromV0003(point) );
+        m_points.append( createPoint(point) );
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -300,7 +308,46 @@ namespace Isis {
         PvlObject &pointObject = network.object(objectIndex);
         ControlPointV0004 point;
         //TODO Fill the ControlPointV0004 object from the PvlObject
-        m_points.append( createPointFromV0004(point) );
+        m_points.append( createPoint(point) );
+      }
+      catch (IException &e) {
+        QString msg = "Failed to initialize control point at index ["
+                      + toString(objectIndex) + "].";
+        throw IException(e, IException::Io, msg, _FILEINFO_);
+      }
+    }
+  }
+
+
+  /**
+   * read a version 5 Pvl control network and convert the data into control points.
+   *
+   * @param network The control network PvlObject.
+   */
+  void ControlNetVersioner::readPvlV0005(const PvlObject &network) {
+    // initialize the header
+    try {
+      ControlNetHeaderV0005 header;
+      header.networkID = network.findKeyword("NetworkId")[0];
+      header.targetName = network.findKeyword("TargetName")[0];
+      header.created = network.findKeyword("Created")[0];
+      header.lastModified = network.findKeyword("LastModified")[0];
+      header.description = network.findKeyword("Description")[0];
+      header.userName = network.findKeyword("UserName")[0];
+      createHeader(header);
+    }
+    catch (IException &e) {
+      QString msg = "Missing required header information.";
+      throw IException(e, IException::Io, msg, _FILEINFO_);
+    }
+
+    // initialize the control points
+    for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
+      try {
+        PvlObject &pointObject = network.object(objectIndex);
+        ControlPointV0005 point;
+        //TODO Fill the ControlPointV0004 object from the PvlObject
+        m_points.append( createPoint(point) );
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -337,8 +384,8 @@ namespace Isis {
         readProtobufV0002(header, netFile);
         break;
 
-      case 7:
-        readProtobufV0007(header, netFile);
+      case 5:
+        readProtobufV0005(header, netFile);
         break;
 
       default:
@@ -356,8 +403,6 @@ namespace Isis {
    * @param netFile The filename of the control network file.
    */
   void ControlNetVersioner::readProtobufV0001(const Pvl &header, const FileName netFile) {
-    // This is empty because we don't have any current methods that read
-    // the V0001 protobuf files. JAM
   }
 
 
@@ -460,21 +505,27 @@ namespace Isis {
   }
 
 
-  void ControlNetVersioner::readProtobufV0007(const Pvl &header, const FileName netFile) {
+  /**
+   * Read a protobuf version 5 control network and prepare the data to be
+   *  converted into a control network.
+   *
+   * @param netFile The filename of the control network file.
+   */
+  void ControlNetVersioner::readProtobufV0005(const Pvl &header, const FileName netFile) {
 
   }
 
 
   /**
-   * Create a pointer to a latest version ControlPoint from an 
-   * object in a V0001 control net file. This method converts a 
-   * ControlPointV0001 to the latest ControlPontV#### version 
-   * and uses the latest versioned point to construct and fill an 
-   * Isis::ControlPoint. 
+   * Create a pointer to a latest version ControlPoint from an
+   * object in a V0001 control net file. This method converts a
+   * ControlPointV0001 to the latest ControlPontV#### version
+   * and uses the latest versioned point to construct and fill an
+   * Isis::ControlPoint.
    *
    * @param point The versioned control point to be updated.
-   *  
-   * @return The latest version ControlPoint constructed from the 
+   *
+   * @return The latest version ControlPoint constructed from the
    *         given point.
    */
   QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0001 point) {
@@ -622,11 +673,11 @@ namespace Isis {
       SurfacePoint adjustedSurfacePoint;
       adjustedSurfacePoint.SetRadii(equatorialRadius, equatorialRadius, polarRadius);
 
-      adjustedSurfacePoint.SetRectangular(Displacement(newPoint.container["AdjustedX"], 
+      adjustedSurfacePoint.SetRectangular(Displacement(newPoint.container["AdjustedX"],
                                                        Displacement::Meters),
-                                          Displacement(newPoint.container["AdjustedY"], 
+                                          Displacement(newPoint.container["AdjustedY"],
                                                        Displacement::Meters),
-                                          Displacement(newPoint.container["AdjustedZ"], 
+                                          Displacement(newPoint.container["AdjustedZ"],
                                                        Displacement::Meters));
 
       adjustedSurfacePoint.SetSphericalSigmasDistance(Distance(sigmaLat, Distance::Meters),
@@ -716,7 +767,7 @@ namespace Isis {
                  || type == "automaticpixel") {
           measure["MeasureType"] = "RegisteredPixel";
         }
-        else if (type == "validatedautomatic" 
+        else if (type == "validatedautomatic"
                  || type == "automaticsubpixel") {
           measure["MeasureType"] = "RegisteredSubPixel";
         }
@@ -769,15 +820,15 @@ namespace Isis {
 
 
   /**
-   * Create a pointer to a latest version ControlPoint from an 
-   * object in a V0002 control net file. This method converts a 
-   * ControlPointV0002 to the latest ControlPontV#### version 
-   * and uses the latest versioned point to construct and fill an 
-   * Isis::ControlPoint. 
+   * Create a pointer to a latest version ControlPoint from an
+   * object in a V0002 control net file. This method converts a
+   * ControlPointV0002 to the latest ControlPontV#### version
+   * and uses the latest versioned point to construct and fill an
+   * Isis::ControlPoint.
    *
    * @param point The versioned control point to be updated.
-   *  
-   * @return The latest version ControlPoint constructed from the 
+   *
+   * @return The latest version ControlPoint constructed from the
    *         given point.
    */
   QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0002 point) {
@@ -798,15 +849,15 @@ namespace Isis {
 
 
   /**
-   * Create a pointer to a latest version ControlPoint from an 
-   * object in a V0003 control net file. This method converts a 
-   * ControlPointV0003 to the latest ControlPontV#### version 
-   * and uses the latest versioned point to construct and fill an 
-   * Isis::ControlPoint. 
+   * Create a pointer to a latest version ControlPoint from an
+   * object in a V0003 control net file. This method converts a
+   * ControlPointV0003 to the latest ControlPontV#### version
+   * and uses the latest versioned point to construct and fill an
+   * Isis::ControlPoint.
    *
    * @param point The versioned control point to be updated.
-   *  
-   * @return The latest version ControlPoint constructed from the 
+   *
+   * @return The latest version ControlPoint constructed from the
    *         given point.
    */
   QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0003 point) {
@@ -826,15 +877,15 @@ namespace Isis {
 
 
   /**
-   * Create a pointer to a latest version ControlPoint from an 
-   * object in a V0004 control net file. This method converts a 
-   * ControlPointV0004 to the latest ControlPontV#### version 
-   * and uses the latest versioned point to construct and fill an 
-   * Isis::ControlPoint. 
+   * Create a pointer to a latest version ControlPoint from an
+   * object in a V0004 control net file. This method converts a
+   * ControlPointV0004 to the latest ControlPontV#### version
+   * and uses the latest versioned point to construct and fill an
+   * Isis::ControlPoint.
    *
    * @param point The versioned control point to be updated.
-   *  
-   * @return The latest version ControlPoint constructed from the 
+   *
+   * @return The latest version ControlPoint constructed from the
    *         given point.
    */
   QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0004 point) {
@@ -1050,12 +1101,12 @@ namespace Isis {
 
 
   /**
-   * Create a pointer to a latest version ControlPoint from a 
-   * V0006 control net file. 
+   * Create a pointer to a latest version ControlPoint from a
+   * V0006 control net file.
    *
    * @param point The versioned control point to be updated.
-   *  
-   * @return The latest version ControlPoint constructed from the 
+   *
+   * @return The latest version ControlPoint constructed from the
    *         given point.
    */
   QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(const ControlPointV0006 point) {
@@ -1090,7 +1141,7 @@ namespace Isis {
     Distance polarRadius;
     if (m_header.has_targetname()) {
       try {
-        // attempt to get target radii values... 
+        // attempt to get target radii values...
         PvlGroup pvlRadii = Target::radiiGroup(m_header.targetname().c_str());
         equatorialRadius.setMeters(pvlRadii["EquatorialRadius"]);
         polarRadius.setMeters(pvlRadii["PolarRadius"]);
@@ -1202,9 +1253,9 @@ namespace Isis {
         // this method will look at the covar matrix for valid values and set accordingly.
 
 #if 0
-        if (Displacement(aprioriCovarianceMatrix(0, 0), Displacement::Meters).isValid() 
+        if (Displacement(aprioriCovarianceMatrix(0, 0), Displacement::Meters).isValid()
             || Displacement(aprioriCovarianceMatrix(1, 1), Displacement::Meters).isValid()) {
-        
+
           if (point.latitudeconstrained()) {
             constraintStatus.set(LatitudeConstrained);
           }
@@ -1214,17 +1265,17 @@ namespace Isis {
           if (point.radiusconstrained()) {
             constraintStatus.set(RadiusConstrained);
           }
-        
+
         }
         else if (Displacement(aprioriCovarianceMatrix(2, 2), Displacement::Meters).isValid()) {
-        
+
           if (point.latitudeconstrained()) {
             constraintStatus.set(LatitudeConstrained);
           }
           if (point.radiusconstrained()) {
             constraintStatus.set(RadiusConstrained);
           }
-        
+
         }
 #endif
       }
@@ -1287,7 +1338,7 @@ namespace Isis {
    * Create a pointer to a ControlMeasure from a V0006 file.
    *
    * @param measure The versioned control measure to be created.
-   *  
+   *
    * @return The ControlMeasure constructed from the V0006 version
    *         file.
    */
