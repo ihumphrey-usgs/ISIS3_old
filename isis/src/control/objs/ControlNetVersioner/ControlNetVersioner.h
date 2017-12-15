@@ -176,8 +176,6 @@ namespace Isis {
       typedef ControlNetHeaderV0003 ControlNetHeaderV0001;
       typedef ControlNetHeaderV0004 ControlNetHeaderV0001;
       typedef ControlNetHeaderV0005 ControlNetHeaderV0001;
-      typedef ControlNetHeaderV0006 ControlNetHeaderV0001;
-      typedef ControlNetHeaderV0007 ControlNetHeaderV0001;
 
       typedef ControlPointV0004 ControlPointV0003;
       typedef ControlPointV0005 ControlPointV0003;
@@ -185,15 +183,16 @@ namespace Isis {
       void read(const FileName netFile);
 
       void readPvl(const Pvl &network);
-      void readPvlV0001(const Pvl &network);
-      void readPvlV0002(const Pvl &network);
-      void readPvlV0003(const Pvl &network);
-      void readPvlV0004(const Pvl &network);
+      void readPvlV0001(const PvlObject &network);
+      void readPvlV0002(const PvlObject &network);
+      void readPvlV0003(const PvlObject &network);
+      void readPvlV0004(const PvlObject &network);
+      void readPvlV0005(const PvlObject &network);
 
       void readProtobuf(const Pvl &header, const FileName netFile);
-      void readProtobufV0001(const FileName netFile);
-      void readProtobufV0002(const FileName netFile);
-      void readProtobufV0007(const FileName netFile);
+      void readProtobufV0001(const Pvl &header, const FileName netFile);
+      void readProtobufV0002(const Pvl &header, const FileName netFile);
+      void readProtobufV0005(const Pvl &header, const FileName netFile);
 
       QSharedPointer<ControlPoint> createPoint(const ControlPointV0001 point);
       QSharedPointer<ControlPoint> createPoint(const ControlPointV0002 point);
