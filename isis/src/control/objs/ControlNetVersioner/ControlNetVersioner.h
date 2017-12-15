@@ -130,14 +130,12 @@ namespace Isis {
    *                           message for this error was very similar to the caught exception
    *                           to which it is appended. References #3892
    *  @history 2017-12-11 Jeannie Backer & Jesse Mapel - Created class skeleton for refactor.
-<<<<<<< HEAD
    *  @history 2017-12-12 Kristin Berry - Added initial toPvl for refactor. 
-=======
    *  @history 2017-12-11 Jesse Mapel - Added VersionedControlNetHeaders.
    *  @history 2017-12-12 Jeannie Backer - Added VersionedControlPoints.
    *  @history 2017-12-12 Jeannie Backer - Implemented createPoint() methods.
    *  @history 2017-12-13 Jeannie Backer - Added target radii to createPoint(V0006).
->>>>>>> 1e77a0e2c0418311d9c4500ccad4ff47917a9936
+
    */
   class ControlNetVersioner {
     public:
