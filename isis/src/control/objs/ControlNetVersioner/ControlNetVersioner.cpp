@@ -1784,6 +1784,7 @@ namespace Isis {
       delete [] blankLabel;
 
       streampos startCoreHeaderPos = output.tellp();
+
       CodedOutputStream* fileStream(output);
       
       writeHeader(fileStream);
@@ -1793,6 +1794,7 @@ namespace Isis {
       }
 
       close(output);
+
     } 
     catch () {
       string msg = "Can't write control net file" 
@@ -1806,6 +1808,7 @@ namespace Isis {
   * @param fileStream  
   */
   void ControlNetVersioner::writeHeader(CodedOutputStream *fileStream) {
+
 
     // Create the protobuf header using our struct
     ControlNetFileHeaderV0005 protobufHeader;
@@ -1838,6 +1841,7 @@ namespace Isis {
 
       protoPoint.set_type(controlPoint.getType());
 
+
       protoPoint.set_id(controlPoint.GetId());
       protoPoint.set_choosername(controlPoint.GetChooserName());
       protoPoint.set_datetime(controlPoint.GetDateTime());
@@ -1850,6 +1854,7 @@ namespace Isis {
       if (controlPoint.HasAprioriSurfacePointSourceFile()) { //DNE right now
         protoPoint.set_apriorisurfpointsourcefile(controlPoint.GetAprioriSurfacePointSourceFile());
       }
+
       // Apriori Surf Point Source ENUM settting
       switch (controlPoint.GetAprioriSurfPointSource()) {
         case ControlPoint::SurfacePointSouce::None:
@@ -1912,9 +1917,9 @@ namespace Isis {
       if (controlPoint.HasAprioriRadiusSourcefile()) { // DNE
         protoPoint.set_aprioriradiussourcefile(protobufPoint.GetAprioriRadiusSourceFile());
       }
-      
 
       if (controlPoint.HasAprioriCoordinates()) { // DNE
+
         protoPoint.set_apriorix(controlPoint.AprioriX());
         protoPoint.set_aprioriy(controlPoint.AprioriY());
         protoPoint.set_aprioriz(controlPoint.AprioriZ());
@@ -1954,7 +1959,9 @@ namespace Isis {
       protoPoint.set_longitudeconstrained(controlPoint.IsLongitudeConstrained());
       protoPoint.set_radiusconstrained(controlPoint.IsRadiusConstrained());
 
+
       if (controlPoint.HasAdjustedCoordinates()) {
+
         protoPoint.set_adjustedx(controlPoint.AdjustedX());
         protoPoint.set_adjustedy(controlPoint.AdjustedY());
         protoPoint.set_adjustedz(controlPoint.AdjustedZ());
@@ -1966,6 +1973,8 @@ namespace Isis {
           protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(3));
           protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(4));
           protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(5));
+
+
           }
         }
       }
