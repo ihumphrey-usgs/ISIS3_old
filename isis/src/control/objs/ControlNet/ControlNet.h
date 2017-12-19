@@ -206,6 +206,7 @@ namespace Isis {
    *   @history 2017-08-09 Summer Stapleton - Added throw to caught exception for bad control net
    *                           import in constructor. Also removed p_invalid as it was no longer
    *                           being used anywhere. Fixes #5068.
+   *   @history 2017-12-18 Adam Goins - Added GetLastModified() accessor. References #5258. 
    */
   class ControlNet : public QObject {
       Q_OBJECT
@@ -280,6 +281,7 @@ namespace Isis {
       int GetNumValidPoints();
       QString GetTarget() const;
       QString GetUserName() const;
+      QString GetLastModified() const;
       QList< ControlPoint * > GetPoints();
       QList< QString > GetPointIds() const;
       std::vector<Distance> GetTargetRadii();

@@ -33,14 +33,27 @@ using namespace google::protobuf::io;
 using namespace std;
 
 namespace Isis {
-
+    
   ControlNetVersioner::ControlNetVersioner(QSharedPointer<ControlNet> net) {
-
+    // Populate the internal list of points.
+    for (int i = 0; i < net.GetNumPoints(); i++) {
+        m_points.add( QSharedPointer<ControlPoint>( net.GetPoints().at(i) ) );
+    }
+    
+    ControlNetHeaderV0001 header;
+    
+    header.networkID = net.GetNetworkId();
+    header.targetName = net.GetTarget();
+    header.created = net.CreatedDate();
+    header.lastModified = net.GetLastModified();
+    header.description = net.Description();
+    header.userName = net.GetUserName();
+    createHeader(header);
   }
 
 
   ControlNetVersioner::ControlNetVersioner(const FileName netFile) {
-
+    read(netFile);
   }
 
 
@@ -1955,7 +1968,7 @@ namespace Isis {
           protoPoint.add_aprioricovar(controlPoint->aprioricovar(3)); // DNE
           protoPoint.add_aprioricovar(controlPoint->aprioricovar(4)); // DNE
           protoPoint.add_aprioricovar(controlPoint->aprioricovar(5)); // DNE
-          
+
           }
         }
       }
