@@ -36,7 +36,7 @@ namespace Isis {
     
   ControlNetVersioner::ControlNetVersioner(QSharedPointer<ControlNet> net) {
     // Populate the internal list of points.
-    for (int i = 0; i < net.GetNumPoints; i++) {
+    for (int i = 0; i < net.GetNumPoints(); i++) {
         m_points.add( QSharedPointer<ControlPoint>( net.GetPoints().at(i) ) );
     }
     
