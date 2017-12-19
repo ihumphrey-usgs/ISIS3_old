@@ -619,6 +619,16 @@ namespace Isis {
 
 
   /**
+   * Checks to see if a reference measure is set. 
+   *
+   * @returns bool True if a reference measure is set. 
+   */
+  bool ControlPoint::HasRefMeasure() const {
+    return !(referenceMeasure == NULL): 
+  }
+
+
+  /**
    * Get the reference control measure.
    *
    * @returns const reference measure for this point
@@ -936,12 +946,15 @@ namespace Isis {
     }
     if (editLock)
       return PointLocked;
-    if (aprioriSP.GetLatSigma().isValid())
+    if (aprioriSP.GetLatSigma().isValid()) {
       constraintStatus.set(LatitudeConstrained);
-    if (aprioriSP.GetLonSigma().isValid())
+    }
+    if (aprioriSP.GetLonSigma().isValid()) {
       constraintStatus.set(LongitudeConstrained);
-    if (aprioriSP.GetLocalRadiusSigma().isValid())
+    }
+    if (aprioriSP.GetLocalRadiusSigma().isValid()) {
       constraintStatus.set(RadiusConstrained);
+    }
     PointModified();
     aprioriSurfacePoint = aprioriSP;
     return Success;
@@ -1402,6 +1415,36 @@ namespace Isis {
 
 
   /**
+   * Gets the adjusted x coordinate.
+   * 
+   * @return Displacement The adjusted x coordinate.
+   */
+  Displacement ContorlPoint::GetAdjustedX() const { 
+    return adjustedSurfacePoint.GetX();
+  }
+
+
+  /**
+   * Gets the adjusted y coordinate.
+   * 
+   * @return Displacement The adjusted y coordinate.
+   */
+  Displacement ContorlPoint::GetAdjustedY() const { 
+    return adjustedSurfacePoint.GetY();
+  }
+
+
+  /**
+   * Gets the adjusted z coordinate.
+   * 
+   * @return Displacement The adjusted z coordinate.
+   */
+  Displacement ContorlPoint::GetAdjustedZ() const { 
+    return adjustedSurfacePoint.GetZ();
+  }
+
+
+  /**
    * Returns the adjusted surface point if it exists, otherwise returns
    * the a priori surface point.
    */
@@ -1669,8 +1712,47 @@ namespace Isis {
   }
 
 
+  /** 
+   * Checks to see if the point has been rejected by jigsaw. 
+   *  
+   * @return bool true if the point is flagged as rejected by jigsaw
+   */
+  bool ContolPoint::IsJigsawRejected() const {
+    return jigsawRejected; 
+  }
+
+
   SurfacePoint ControlPoint::GetAprioriSurfacePoint() const {
     return aprioriSurfacePoint;
+  }
+
+  /**
+   * Gets the apriori x coordinate.
+   * 
+   * @return Displacement The apriori x coordinate.
+   */
+  Displacement ContorlPoint::GetAprioriX() const { 
+    return aprioriSurfacePoint.GetX();
+  }
+
+
+  /**
+   * Gets the apriori y coordinate.
+   * 
+   * @return Displacement The apriori y coordinate.
+   */
+  Displacement ContorlPoint::GetAprioriY() const { 
+    return aprioriSurfacePoint.GetY();
+  }
+
+
+  /**
+   * Gets the apriori z coordinate.
+   * 
+   * @return Displacement The apriori z coordinate.
+   */
+  Displacement ContorlPoint::GetAprioriZ() const { 
+    return aprioriSurfacePoint.GetZ();
   }
 
 
@@ -1687,6 +1769,23 @@ namespace Isis {
 
     return false;
   }
+
+  
+  /**
+   * Checks to see if the ControlPoint has an adjusted SurfacePoint.
+   * 
+   * @return bool True if the control point has adjusted x, y, and z coordinates.
+   */
+  bool ControlPoint::HasAdjustedCoordinates() {
+    if (adjustedSurfacePoint.GetX().isValid() &&
+        adjustedSurfacePoint.GetY().isValid() &&
+        adjustedSurfacePoint.GetZ().isValid()) {
+      return true;
+    }
+
+    return false;
+  }
+
 
   bool ControlPoint::IsConstrained() {
     return constraintStatus.any();
@@ -1708,6 +1807,17 @@ namespace Isis {
     return constraintStatus.count();
   }
 
+
+ /**
+  * Checks to see if the radius source file has been set.  
+  *  
+  * @return bool True if the radius source file has been set.
+  */
+  bool ControlPoint::HasAprioriRadiusSourceFile() const {
+    return !( aprioriRadiusSourceFile.isEmpty() || aprioriRadiusSourceFile.isNull() );
+  }
+
+
   QString ControlPoint::GetAprioriRadiusSourceFile() const {
     return aprioriRadiusSourceFile;
   }
@@ -1715,6 +1825,16 @@ namespace Isis {
   ControlPoint::SurfacePointSource::Source
   ControlPoint::GetAprioriSurfacePointSource() const {
     return aprioriSurfacePointSource;
+  }
+
+
+ /**
+  * Checks to see if the surface point source file has been set.  
+  *  
+  * @return bool True if the surface point source file has been set.
+  */
+  bool HasAprioriSurfacePointSourceFile() const {
+    return !( aprioriSurfacePointSourceFile.isEmpty() || aprioriSurfacePointSourceFile.isNull() );
   }
 
 
@@ -1837,7 +1957,7 @@ namespace Isis {
    * measure.
    */
   int ControlPoint::IndexOfRefMeasure() const {
-    if (!referenceMeasure) {
+    if (!hasRefMeasure()) {
       QString msg = "There is no reference measure for point [" + id + "]."
           "  This also means of course that the point is empty!";
       throw IException(IException::Programmer, msg, _FILEINFO_);

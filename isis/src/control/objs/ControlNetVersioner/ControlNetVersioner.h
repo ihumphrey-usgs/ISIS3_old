@@ -23,16 +23,17 @@
  *   http://www.usgs.gov/privacy.html.
  */
 
-#include <string>
+#include <QString>
 
-#include "ControlNetFile.h"
-#include "ControlNetFileV0002.pb.h"
+#include <QList>
+#include <QSharedPointer>
+#include <QVector>
+
+#include "ControlPoint.h"
 
 class QString;
 
 namespace Isis {
-  class ControlNetFileV0001;
-  class ControlNetFileV0002;
   class FileName;
   class Progress;
   class Pvl;
@@ -128,75 +129,93 @@ namespace Isis {
    *                           call. This was done to reduce redundancy since the original
    *                           message for this error was very similar to the caught exception
    *                           to which it is appended. References #3892
+   *  @history 2017-12-11 Jeannie Backer & Jesse Mapel - Created class skeleton for refactor.
+   *  @history 2017-12-11 Jesse Mapel - Added VersionedControlNetHeaders.
+   *  @history 2017-12-12 Kristin Berry - Added initial toPvl for refactor. 
+   *  @history 2017-12-12 Jeannie Backer - Added VersionedControlPoints.
+   *  @history 2017-12-12 Jeannie Backer - Implemented createPoint() methods.
+   *  @history 2017-12-13 Jeannie Backer - Added target radii to createPoint(V0006).
+   *  @history 2017-12-18 Adam Goins and Kristin Berry - Added new write() method.
+   *  @history 2017-12-19 Kristin Berry - Corrected method names and general cleanup in toPvl and
+   *                            write for refactor. 
    */
   class ControlNetVersioner {
+    class ControlPointV0003;
+
     public:
-      static LatestControlNetFile *Read(const FileName &file);
-      static void Write(const FileName &file, const LatestControlNetFile &,
-                        bool pvl = false);
+      ControlNetVersioner(QSharedPointer<ControlNet> net);
+      ControlNetVersioner(const FileName netFile);
+      ~ControlNetVersioner();
+
+      QString netId() const;
+      QString targetName() const;
+      QString creationDate() const;
+      QString lastModificationDate() const;
+      QString description() const;
+      QString userName() const;
+
+      QSharedPointer<ControlPoint> takeFirstPoint();
+
+      void write(FileName netFile);
+      Pvl &toPvl();
 
     private:
-      // read Pvl and bring it up to the latest version, then convert to binary
-      static LatestControlNetFile *ReadPvlNetwork(Pvl pvl);
-      static LatestControlNetFile *LatestPvlToBinary(PvlObject &network);
-
-      // read Binary, convert to Pvl, call ReadPvlNetwork
-      static LatestControlNetFile *ReadBinaryNetwork(const Pvl &header,
-                                                     const FileName &file);
-
-      static void ConvertVersion1ToVersion2(PvlObject &network);
-      static void ConvertVersion2ToVersion3(PvlObject &network);
-      static void ConvertVersion3ToVersion4(PvlObject &network);
-
-      // We only need the latest Pvl version because it has our update cycle
-      //! The latest version of the Pvl formatted control networks
-      static const int LATEST_PVL_VERSION = 4;
-      //! The latest version of the Binary formatted control networks
-      static const int LATEST_BINARY_VERSION = 2;
-
-    private:
-      // helper methods for LatestPvlToBinary
-      static void Copy(PvlContainer &container, QString keyName,
-          ControlPointFileEntryV0002 &point,
-          void (ControlPointFileEntryV0002::*setter)(bool));
-      static void Copy(PvlContainer &container,
-          QString keyName, ControlPointFileEntryV0002 &point,
-          void (ControlPointFileEntryV0002::*setter)(double));
-      static void Copy(PvlContainer &container,
-          QString keyName, ControlPointFileEntryV0002 &point,
-          void (ControlPointFileEntryV0002::*setter)(const std::string&));
-
-      static void Copy(PvlContainer &container, QString keyName,
-          ControlPointFileEntryV0002::Measure &measure,
-          void (ControlPointFileEntryV0002::Measure::*setter)(bool));
-      static void Copy(PvlContainer &container, QString keyName,
-          ControlPointFileEntryV0002::Measure &measure,
-          void (ControlPointFileEntryV0002::Measure::*setter)(double));
-      static void Copy(PvlContainer &container, QString keyName,
-          ControlPointFileEntryV0002::Measure &measure,
-          void (ControlPointFileEntryV0002::Measure::*setter)
-            (const std::string &));
-
-      // This class is static, no instantiation allowed
-      /**
-       * The constructor is not implemented.
-       */
+      // These three methods are private for safety reasons.
+      // TODO write a better reason. JAM
       ControlNetVersioner();
-      /**
-       * The constructor is not implemented so the copy constructor is
-       *   impossible.
-       *
-       * @param other The versioner to copy from
-       */
       ControlNetVersioner(const ControlNetVersioner &other);
-      /**
-       * The constructor is not implemented so assignment is impossible.
-       *
-       * @param other The versioner to copy from
-       */
       ControlNetVersioner &operator=(const ControlNetVersioner &other);
+
+      // Private ControlNetHeader structs for versioning
+      // TODO Document these for doxygen. JAM
+      struct ControlNetHeaderV0001 {
+        QString networkID;
+        QString targetName;
+        QString created;
+        QString lastModified;
+        QString description;
+        QString userName;
+      };
+      typedef ControlNetHeaderV0002 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0003 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0004 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0005 ControlNetHeaderV0001;
+
+      typedef ControlPointV0004 ControlPointV0003;
+      typedef ControlPointV0005 ControlPointV0003;
+
+      void read(const FileName netFile);
+
+      void readPvl(const Pvl &network);
+      void readPvlV0001(const PvlObject &network);
+      void readPvlV0002(const PvlObject &network);
+      void readPvlV0003(const PvlObject &network);
+      void readPvlV0004(const PvlObject &network);
+      void readPvlV0005(const PvlObject &network);
+
+      void readProtobuf(const Pvl &header, const FileName netFile);
+      void readProtobufV0001(const Pvl &header, const FileName netFile);
+      void readProtobufV0002(const Pvl &header, const FileName netFile);
+      void readProtobufV0005(const Pvl &header, const FileName netFile);
+
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0001 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0002 point);
+      QSharedPointer<ControlPoint> createPoint(const ControlPointV0003 point);
+
+      QSharedPointer<ControlMeasure> createMeasure(const ControlMeasureV0006 measure);
+
+      void setHeader(const ControlNetHeaderV0001 header);
+
+      void writeHeader(ZeroCopyOutputStream *fileStream);
+      void writeFirstPoint(ZeroCopyOutputStream *fileStream);
+
+      ControlNetHeaderV0007 m_header; /**< Header containing information about
+                                           the whole network.*/
+      QList< QSharedPointer<ControlPoint> > m_points; /**< ControlPoints that are
+                                                           read in from a file or
+                                                           ready to be written out
+                                                           to a file.*/
+
   };
 }
-
 #endif
-
