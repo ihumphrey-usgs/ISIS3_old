@@ -1712,6 +1712,16 @@ namespace Isis {
   }
 
 
+  /** 
+   * Checks to see if the point has been rejected by jigsaw. 
+   *  
+   * @return bool true if the point is flagged as rejected by jigsaw
+   */
+  bool ContolPoint::IsJigsawRejected() const {
+    return jigsawRejected; 
+  }
+
+
   SurfacePoint ControlPoint::GetAprioriSurfacePoint() const {
     return aprioriSurfacePoint;
   }
@@ -1947,7 +1957,7 @@ namespace Isis {
    * measure.
    */
   int ControlPoint::IndexOfRefMeasure() const {
-    if (!referenceMeasure) {
+    if (!hasRefMeasure()) {
       QString msg = "There is no reference measure for point [" + id + "]."
           "  This also means of course that the point is empty!";
       throw IException(IException::Programmer, msg, _FILEINFO_);
