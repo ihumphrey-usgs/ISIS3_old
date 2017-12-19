@@ -167,6 +167,7 @@ namespace Isis {
    *                           data and added comparisons for missing member data.
    *   @history 2012-08-11 Tracie Sucharski, Add computed and measured ephemeris time set to Null
    *                           in InitializeToNull.
+   *   @history 2017-12-19 Adam Goins - Added "HasX()" accessors to ControlMeasure.
    */
   class ControlMeasure : public QObject {
 
@@ -306,20 +307,20 @@ namespace Isis {
       double GetLineShift() const;
       double GetPixelShift() const;
       
-      bool HasChooserName();
-      bool HasDataTime();
-      bool HasSample();
-      bool HasLine();
-      bool HasDiameter();
-      bool hasAprioriSample();
-      bool hasAprioriLine();
-      bool HasSampleSigma();
-      bool HasLineSigma();
-      bool HasSampleResidual();
-      bool HasLineResidual();
-      bool HasJigsawRejected();
-      bool JigsawRejected();
-      int LogSize();
+      bool hasChooserName() const;
+      bool hasDateTime() const;
+      bool hasSample() const;
+      bool hasLine() const;
+      bool hasDiameter() const;
+      bool hasAprioriSample() const;
+      bool hasAprioriLine() const;
+      bool hasSampleSigma() const;
+      bool hasLineSigma() const;
+      bool hasSampleResidual() const;
+      bool hasLineResidual() const;
+      bool hasJigsawRejected() const;
+      bool jigsawRejected() const;
+      int logSize() const;
 
       static QVector<QString> GetMeasureDataNames();
 
