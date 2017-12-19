@@ -1771,7 +1771,7 @@ namespace Isis {
   /**
    * This will write a control net file object to disk.
    *
-   * @param file file The output filename that will be written to
+   * @param netFile The output filename that will be written to
    *
    */
   void ControlNetVersioner::write(FileName netFile) {
@@ -1785,46 +1785,16 @@ namespace Isis {
 
       streampos startCoreHeaderPos = output.tellp();
 
-      CodedOutputStream* fileStream = new FileOutputStream(output);
+      OStreamOutputStream* fileStream(output);
+      
       writeHeader(fileStream);
 
-      // If this is a function that writes only 1 point, we'll need call it more than once.
-      // Update to be a loop... later.
-      writeFirstPoint(fileStream); 
+      while ( !m_points.isEmpty() ) {
+        writeFirstPoint(fileStream);
+      }
 
-      // Construct Pvl Header and add to beginning of output file 
-   /* Pvl p;
-    PvlObject protoObj("ProtoBuffer");
+      close(output);
 
-    PvlObject protoCore("Core");
-    protoCore.addKeyword(PvlKeyword("HeaderStartByte",
-                         toString((BigInt) startCoreHeaderPos)));
-    protoCore.addKeyword(PvlKeyword("HeaderBytes", toString((BigInt) coreHeaderSize)));
-    protoCore.addKeyword(PvlKeyword("PointsStartByte",
-        toString((BigInt) ( startCoreHeaderPos + coreHeaderSize))));
-    protoCore.addKeyword(PvlKeyword("PointsBytes",
-        toString(pointsSize)));
-    protoObj.addObject(protoCore);
-
-    PvlGroup netInfo("ControlNetworkInfo");
-    netInfo.addComment("This group is for informational purposes only");
-    netInfo += PvlKeyword("NetworkId", p_networkHeader->networkid().c_str());
-    netInfo += PvlKeyword("TargetName", p_networkHeader->targetname().c_str());
-    netInfo += PvlKeyword("UserName", p_networkHeader->username().c_str());
-    netInfo += PvlKeyword("Created", p_networkHeader->created().c_str());
-    netInfo += PvlKeyword("LastModified", p_networkHeader->lastmodified().c_str());
-    netInfo += PvlKeyword("Description", p_networkHeader->description().c_str());
-    netInfo += PvlKeyword("NumberOfPoints", toString(p_controlPoints->size()));
-    netInfo += PvlKeyword("NumberOfMeasures", toString(numMeasures));
-    netInfo += PvlKeyword("Version", "5");
-    protoObj.addGroup(netInfo);
-
-    p.addObject(protoObj);
-
-    output.seekp(0, ios::beg);
-    output << p;
-    output << '\n';*/
-      close(outfd);
     } 
     catch () {
       string msg = "Can't write control net file" 
@@ -1833,11 +1803,13 @@ namespace Isis {
   }
 
  /**
-  * This will the binary protobuffer control network header to a ZeroCopyOutputStream
+  * This will read the binary protobuffer control network header to a ZeroCopyOutputStream
   * 
   * @param fileStream  
   */
-  void ControlNetVersioner::writeHeader(ZeroCopyOutputStream *fileStream) {
+  void ControlNetVersioner::writeHeader(ZeroCopyOutputStream *oStream) {
+
+    CodedOutputStream fileStream(oStream);
 
     // Create the protobuf header using our struct
     ControlNetFileHeaderV0005 protobufHeader;
@@ -1854,126 +1826,170 @@ namespace Isis {
           file.name() + "]";
       throw IException(IException::Io, msg, _FILEINFO_);
     }
+
   }
 
 
  /**
   * This will write the first control control point to a ZeroCopyOutputStream
   * 
-  * @param fileStream  
+  * @param fileStream A pointer to the fileStream that we are writing the point to.  
   */
-  void ControlNetVersioner::writeFirstPoint(ZeroCopyOutputStream *fileStream) {
+  void ControlNetVersioner::writeFirstPoint(ZeroCopyOutputStream *oStream) {
 
+      CodedOutputStream fileStream(oStream);
+      
       ControlPointFileEntryV0005 protoPoint;
-      ControlPoint controlPoint = m_points.takeFirst();
+      QSharedPointer<ControlPoint> controlPoint = m_points.takeFirst();
 
-      protoPoint.set_type(controlPoint.getType())
+      protoPoint.set_type(controlPoint->getType());
 
-      protoPoint.set_id(controlPoint.GetId());
-      protoPoint.set_choosername(controlPoint.GetChooserName());
-      protoPoint.set_datetime(controlPoint.GetDateTime());
-      protoPoint.set_editlock(controlPoint.IsEditLocked());
+      protoPoint.set_id(controlPoint->GetId());
+      protoPoint.set_choosername(controlPoint->GetChooserName());
+      protoPoint.set_datetime(controlPoint->GetDateTime());
+      protoPoint.set_editlock(controlPoint->IsEditLocked());
 
-      protoPoint.set_ignore(controlPoint.IsIgnored());
+      protoPoint.set_ignore(controlPoint->IsIgnored());
 
-      protoPoint.set_apriorisurfpointsource(controlPoint.GetAprioriSurfPointSource());
+      protoPoint.set_apriorisurfpointsource(controlPoint->GetAprioriSurfPointSource());
 
-      if (controlPoint.HasAprioriSurfacePointSourceFile()) { //DNE right now
-        protoPoint.set_apriorisurfpointsourcefile(controlPoint.GetAprioriSurfacePointSourceFile());
+      if (controlPoint->HasAprioriSurfacePointSourceFile()) { //DNE right now
+        protoPoint.set_apriorisurfpointsourcefile(controlPoint->GetAprioriSurfacePointSourceFile());
       }
 
-      protoPoint.set_aprioriradiussource(controlPoint.GetAprioriRadiusSource());
+      // Apriori Surf Point Source ENUM settting
+      switch (controlPoint->GetAprioriSurfPointSource()) {
+        case ControlPoint::SurfacePointSouce::None:
+          protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_None);
+          break;
+        case ControlPoint::SurfacePointSource::User:
+          protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_User);
+          break;
+        case ControlPoint::SurfacePointSource::AverageOfMeasures:
+          protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_AverageOfMeasures);
+          break;
+        case ControlPoint::SurfacePointSource::Reference:
+          protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_Reference);
+          break;
+        case ControlPoint::SurfacePointSource::Basemap:
+          protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_Basemap);
+          break;
+        case ControlPoint::SurfacePointSource::BundleSolution:
+          protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_BundleSolution);
+          break;
+      }
+      
+      // Apriori Radius Point Source ENUM setting
+      switch (controlPoint->GetAprioriRadiusSource()) {
+        case ControlPoint::RadiusSource::None:
+          protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_None);
+          break;
+        case ControlPoint::RadiusSource::User:
+          protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_User);
+          break;
+        case ControlPoint::RadiusSource::AverageOfMeasures:
+          protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_AverageOfMeasures);
+          break;
+        case ControlPoint::RadiusSource::BundleSolution:
+          protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_BundleSolution);
+          break;
+        case ControlPoint::RadiusSource::Ellipsoid: 
+          protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_Ellipsoid);
+          break;
+        case ControlPoint::RadiusSource::DEM:
+          protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_DEM);
+          break;
+      }
+
+      protoPoint.set_aprioriradiussource(controlPoint->GetAprioriRadiusSource());
 
       // FIXME: None of Apriori(X,Y,Z) is available directly from ControlPoint in the API
-      if (controlPoint.HasAprioriRadiusSourcefile()) { // DNE
+      if (controlPoint->HasAprioriRadiusSourcefile()) { // DNE
         protoPoint.set_aprioriradiussourcefile(protobufPoint.GetAprioriRadiusSourceFile());
       }
 
-      if (controlPoint.HasApriorix()) { // DNE
-        protoPoint.set_apriorix(controlPoint.AprioriX());
-        protoPoint.set_aprioriy(controlPoint.AprioriY());
-        protoPoint.set_aprioriz(controlPoint.AprioriZ());
+      if (controlPoint->HasAprioriCoordinates()) { // DNE
+
+        protoPoint.set_apriorix(controlPoint->AprioriX());
+        protoPoint.set_aprioriy(controlPoint->AprioriY());
+        protoPoint.set_aprioriz(controlPoint->AprioriZ());
 
 
         // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
-        if (controlPoint.AprioriCovarSize()) { // DNE
+        if (controlPoint->AprioriCovarSize()) { // DNE
+            
           // Ensure this is the right way to add these values
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(0)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(1)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(2)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(3)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(4)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(5)); // DNE
-
-          // Does this get added to the ProtoPoint?
-          // if (pvlRadii.hasKeyword("EquatorialRadius")) {
-          //   apriori.SetRadii(
-          //                Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-          //                Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-          //                Distance(pvlRadii["PolarRadius"],Distance::Meters));
-          //   symmetric_matrix<double, upper> covar;
-          //   covar.resize(3);
-          //   covar.clear();
-          //   covar(0, 0) = controlPoint.aprioricovar(0); // DNE
-          //   covar(0, 1) = controlPoint.aprioricovar(1); // DNE
-          //   covar(0, 2) = controlPoint.aprioricovar(2); // DNE
-          //   covar(1, 1) = controlPoint.aprioricovar(3); // DNE
-          //   covar(1, 2) = controlPoint.aprioricovar(4); // ""
-          //   covar(2, 2) = controlPoint.aprioricovar(5); // ""
-          //   apriori.SetRectangularMatrix(covar);
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(0)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(1)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(2)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(3)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(4)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(5)); // DNE
+          
           }
         }
       }
 
-      protoPoint.set_latitudeconstrained(controlPoint.IsLatitudeConstrained());
-      protoPoint.set_longitudeconstrained(controlPoint.IsLongitudeConstrained());
-      protoPoint.set_radiusconstrained(controlPoint.IsRadiusConstrained());
-
-      if (controlPoint.HasAdjustedX()) {
-        protoPoint.set_adjustedx(controlPoint.AdjustedX());
-        protoPoint.set_adjustedy(controlPoint.AdjustedY());
-        protoPoint.set_adjustedz(controlPoint.AdjustedZ());
+      protoPoint.set_latitudeconstrained(controlPoint->IsLatitudeConstrained());
+      protoPoint.set_longitudeconstrained(controlPoint->IsLongitudeConstrained());
+      protoPoint.set_radiusconstrained(controlPoint->IsRadiusConstrained());
 
 
-        // FIGURE OUT HOW TO DO THIS MATRIX STUFF
-        if (controlPoint.AdjustedCovarSize()) { // DNE
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(0));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(1));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(2));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(3));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(4));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(5));
+      if (controlPoint->HasAdjustedCoordinates()) {
 
-          // Does this get added to the ProtoPoint object?
-          // if (pvlRadii.hasKeyword("EquatorialRadius")) {
-          //   adjusted.SetRadii(
-          //                Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-          //                Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-          //                Distance(pvlRadii["PolarRadius"],Distance::Meters));
-          //   symmetric_matrix<double, upper> covar;
-          //   covar.resize(3);
-          //   covar.clear();
-          //   covar(0, 0) = controlPoint.AdjustedCovar(0);
-          //   covar(0, 1) = controlPoint.AdjustedCovar(1);
-          //   covar(0, 2) = controlPoint.AdjustedCovar(2);
-          //   covar(1, 1) = controlPoint.AdjustedCovar(3);
-          //   covar(1, 2) = controlPoint.AdjustedCovar(4);
-          //   covar(2, 2) = controlPoint.AdjustedCovar(5);
-          //   adjusted.SetRectangularMatrix(covar);
+        protoPoint.set_adjustedx(controlPoint->AdjustedX());
+        protoPoint.set_adjustedy(controlPoint->AdjustedY());
+        protoPoint.set_adjustedz(controlPoint->AdjustedZ());
+
+        if (controlPoint->AdjustedCovarSize()) { // DNE
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(0));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(1));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(2));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(3));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(4));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(5));
+
+
           }
         }
       }
 
-      for (int j = 0; j < controlPoint.GetNumMeasures(); j++) {
+      // Converting Measures
+      for (int j = 0; j < controlPoint->GetNumMeasures(); j++) {
 
         const ControlMeasure &
-            controlMeasure = controlPoint.GetMeasures(j);
+            controlMeasure = controlPoint->GetMeasure(j);
 
         ControlPointFileEntryV0005_Measure protoMeasure;
 
+        // DNE or covered by different function?
+        if (controlPoint->HasReferenceIndex() && controlPoint->IndexOfRefMeasure() == j) {
+             protoPoint.set_referenceindex(j);
+             
+          // This isn't inside of the ControlPointFileEntryV0005, should it be?
+          // pvlMeasure += PvlKeyword("Reference", "True");
+        }
+        
         protoMeasure.set_serialnumber(controlMeasure.GetCubeSerialNumber());
 
-        protoMeasure.set_measuretype(controlMeasure.GetType());
+        switch ( controlMeasure.GetType() ) {
+            case (ControlMeasure::MeasureType::Canditate) {
+                protoMeasure.set_measuretype(ControlPointFileEntryV0005_Measure_MeasureType_Candidate);
+                break;
+            }
+            case (ControlMeasure::MeasureType::Manual) {
+                protoMeasure.set_measuretype(ControlPointFileEntryV0005_Measure_MeasureType_Manual);
+                break;
+            }
+            case (ControlMeasure::RegisteredPixel) {
+                protoMeasure.set_measuretype(ControlPointFileEntryV0005_Measure_MeasureType_RegisteredPixel);
+                break;
+            }
+            case (ControlMeasure::RegisteredSubPixel) {
+                protoMeasure.set_measuretype(ControlPointFileEntryV0005_Measure_MeasureType_RegisteredSubPixel);
+                break;
+            }
+        }        
 
         if (controlMeasure.HasChooserName()) { // DNE
           protoMeasure.set_choosername(controlMeasure.GetChooserName());
@@ -2047,8 +2063,8 @@ namespace Isis {
           protoMeasure.add_log(logData);
         }
 
-        if (controlPoint.HasReferenceIndex() && // DNE or covered by different function?
-           controlPoint.IndexOfRefMeasure() == j) {
+        if (controlPoint->HasReferenceIndex() && // DNE or covered by different function?
+           controlPoint->IndexOfRefMeasure() == j) {
              protoPoint.set_referenceindex(j);
 
           // This isn't inside of the ControlPointFileEntryV0005, should it be?
@@ -2058,11 +2074,11 @@ namespace Isis {
       }
 
       int msgSize(protoPoint.ByteSize());
-      m_PBOCodedStream->WriteVarint32(msgSize);
-      if ( !msg.SerializeToCodedStream(m_PBOCodedStream.data()) ) {
-        QString err = "Error writing to coded PB stream at position " +
-                    QString::number(m_out->tellp());
-      throw IException(IException::Programmer, err, _FILEINFO_);
+      fileStream->WriteVarint32(msgSize);
+      
+      if ( !protoPoint.SerializeToCodedStream(fileStream.data()) ) {
+        QString err = "Error writing to coded protobuf stream";
+        throw IException(IException::Programmer, err, _FILEINFO_);
       }
 
       // return size of message
