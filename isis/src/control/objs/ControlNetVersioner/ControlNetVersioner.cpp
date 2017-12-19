@@ -40,14 +40,15 @@ namespace Isis {
         m_points.add( QSharedPointer<ControlPoint>( net.GetPoints().at(i) ) );
     }
     
-    // Populate the header.
-    m_header.set_networkid( net.GetNetworkId() );
-    m_header.set_targetname( net.GetTarget() );
-    m_header.set_username( net.GetUserName() );
-    m_header.set_created( net.CreatedDate() );
-    m_header.set_lastmodified( net.GetLastModified() );
-    m_header.set_description( net.Description() );
+    ControlNetHeaderV0001 header;
     
+    header.networkID = net.GetNetworkId();
+    header.targetName = net.GetTarget();
+    header.created = net.CreatedDate();
+    header.lastModified = net.GetLastModified();
+    header.description = net.Description();
+    header.userName = net.GetUserName();
+    createHeader(header);
   }
 
 
