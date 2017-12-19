@@ -231,7 +231,7 @@ namespace Isis {
       }
 
 
-      if (controlPoint.HasAprioriRadiusSourcefile()) {
+      if (controlPoint.HasAprioriRadiusSourceFile()) {
         pvlPoint += PvlKeyword("AprioriRadiusSourceFile",
                         protobufPoint.GetAprioriRadiusSourceFile());
         }
@@ -1929,7 +1929,7 @@ namespace Isis {
 
       protoPoint.set_aprioriradiussource(controlPoint->GetAprioriRadiusSource());
 
-      if (controlPoint->HasAprioriRadiusSourcefile()) {
+      if (controlPoint->HasAprioriRadiusSourceFile()) {
         protoPoint.set_aprioriradiussourcefile(protobufPoint.GetAprioriRadiusSourceFile());
       }
 
