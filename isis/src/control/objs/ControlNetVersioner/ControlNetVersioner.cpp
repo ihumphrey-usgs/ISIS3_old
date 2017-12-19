@@ -1785,7 +1785,7 @@ namespace Isis {
 
       streampos startCoreHeaderPos = output.tellp();
 
-      CodedOutputStream* fileStream(output);
+      OStreamOutputStream* fileStream(output);
       
       writeHeader(fileStream);
 
@@ -1807,8 +1807,9 @@ namespace Isis {
   * 
   * @param fileStream  
   */
-  void ControlNetVersioner::writeHeader(CodedOutputStream *fileStream) {
+  void ControlNetVersioner::writeHeader(ZeroCopyOutputStream *oStream) {
 
+    CodedOutputStream fileStream(oStream);
 
     // Create the protobuf header using our struct
     ControlNetFileHeaderV0005 protobufHeader;
@@ -1834,73 +1835,62 @@ namespace Isis {
   * 
   * @param fileStream A pointer to the fileStream that we are writing the point to.  
   */
-  void ControlNetVersioner::writeFirstPoint(CodedOutputStream *fileStream) {
+  void ControlNetVersioner::writeFirstPoint(ZeroCopyOutputStream *oStream) {
 
+      CodedOutputStream fileStream(oStream);
+      
       ControlPointFileEntryV0005 protoPoint;
       QSharedPointer<ControlPoint> controlPoint = m_points.takeFirst();
 
-      protoPoint.set_type(controlPoint.getType());
+      protoPoint.set_type(controlPoint->getType());
 
+      protoPoint.set_id(controlPoint->GetId());
+      protoPoint.set_choosername(controlPoint->GetChooserName());
+      protoPoint.set_datetime(controlPoint->GetDateTime());
+      protoPoint.set_editlock(controlPoint->IsEditLocked());
 
-      protoPoint.set_id(controlPoint.GetId());
-      protoPoint.set_choosername(controlPoint.GetChooserName());
-      protoPoint.set_datetime(controlPoint.GetDateTime());
-      protoPoint.set_editlock(controlPoint.IsEditLocked());
+      protoPoint.set_ignore(controlPoint->IsIgnored());
 
-      protoPoint.set_ignore(controlPoint.IsIgnored());
+      protoPoint.set_apriorisurfpointsource(controlPoint->GetAprioriSurfPointSource());
 
-      protoPoint.set_apriorisurfpointsource(controlPoint.GetAprioriSurfPointSource());
-
-      if (controlPoint.HasAprioriSurfacePointSourceFile()) { //DNE right now
-        protoPoint.set_apriorisurfpointsourcefile(controlPoint.GetAprioriSurfacePointSourceFile());
+      if (controlPoint->HasAprioriSurfacePointSourceFile()) { //DNE right now
+        protoPoint.set_apriorisurfpointsourcefile(controlPoint->GetAprioriSurfacePointSourceFile());
       }
 
       // Apriori Surf Point Source ENUM settting
-      switch (controlPoint.GetAprioriSurfPointSource()) {
+      switch (controlPoint->GetAprioriSurfPointSource()) {
         case ControlPoint::SurfacePointSouce::None:
           protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_None);
           break;
-        case ControlPoint::SurfacePointSouce::User:
+        case ControlPoint::SurfacePointSource::User:
           protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_User);
           break;
-        case ControlPoint::SurfacePointSouce::AverageOfMeasures:
+        case ControlPoint::SurfacePointSource::AverageOfMeasures:
           protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_AverageOfMeasures);
           break;
-        case ControlPoint::SurfacePointSouce::Reference:
+        case ControlPoint::SurfacePointSource::Reference:
           protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_Reference);
           break;
-        case ControlPoint::SurfacePointSouce::Basemap:
+        case ControlPoint::SurfacePointSource::Basemap:
           protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_Basemap);
           break;
-        case ControlPoint::SurfacePointSouce::BundleSolution:
+        case ControlPoint::SurfacePointSource::BundleSolution:
           protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_BundleSolution);
-          break;
-        case ControlPoint::RadiusSource::Ellipsoid: 
-          protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_Ellipsoid);
-          break;
-        case ControlPoint::RadiusSource::DEM:
-          protoPoint.set_apriorisurfpointsource(ControlPointFileEntryV0005_AprioriSource_DEM);
           break;
       }
       
       // Apriori Radius Point Source ENUM setting
-      switch (controlPoint.GetAprioriRadiusSource()) {
-        case ControlPoint::SurfacePointSouce::None:
+      switch (controlPoint->GetAprioriRadiusSource()) {
+        case ControlPoint::RadiusSource::None:
           protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_None);
           break;
-        case ControlPoint::SurfacePointSouce::User:
+        case ControlPoint::RadiusSource::User:
           protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_User);
           break;
-        case ControlPoint::SurfacePointSouce::AverageOfMeasures:
+        case ControlPoint::RadiusSource::AverageOfMeasures:
           protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_AverageOfMeasures);
           break;
-        case ControlPoint::SurfacePointSouce::Reference:
-          protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_Reference);
-          break;
-        case ControlPoint::SurfacePointSouce::Basemap:
-          protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_Basemap);
-          break;
-        case ControlPoint::SurfacePointSouce::BundleSolution:
+        case ControlPoint::RadiusSource::BundleSolution:
           protoPoint.set_aprioriradiussource(ControlPointFileEntryV0005_AprioriSource_BundleSolution);
           break;
         case ControlPoint::RadiusSource::Ellipsoid: 
@@ -1911,68 +1901,53 @@ namespace Isis {
           break;
       }
 
-      protoPoint.set_aprioriradiussource(controlPoint.GetAprioriRadiusSource());
+      protoPoint.set_aprioriradiussource(controlPoint->GetAprioriRadiusSource());
 
       // FIXME: None of Apriori(X,Y,Z) is available directly from ControlPoint in the API
-      if (controlPoint.HasAprioriRadiusSourcefile()) { // DNE
+      if (controlPoint->HasAprioriRadiusSourcefile()) { // DNE
         protoPoint.set_aprioriradiussourcefile(protobufPoint.GetAprioriRadiusSourceFile());
       }
 
-      if (controlPoint.HasAprioriCoordinates()) { // DNE
+      if (controlPoint->HasAprioriCoordinates()) { // DNE
 
-        protoPoint.set_apriorix(controlPoint.AprioriX());
-        protoPoint.set_aprioriy(controlPoint.AprioriY());
-        protoPoint.set_aprioriz(controlPoint.AprioriZ());
+        protoPoint.set_apriorix(controlPoint->AprioriX());
+        protoPoint.set_aprioriy(controlPoint->AprioriY());
+        protoPoint.set_aprioriz(controlPoint->AprioriZ());
 
 
         // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
-        if (controlPoint.AprioriCovarSize()) { // DNE
+        if (controlPoint->AprioriCovarSize()) { // DNE
+            
           // Ensure this is the right way to add these values
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(0)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(1)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(2)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(3)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(4)); // DNE
-          protoPoint.add_aprioricovar(controlPoint.aprioricovar(5)); // DNE
-
-          // Look into this
-           // if (pvlRadii.hasKeyword("EquatorialRadius")) {
-           //   apriori.SetRadii(
-           //                Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-           //                Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-           //                Distance(pvlRadii["PolarRadius"],Distance::Meters));
-           //   symmetric_matrix<double, upper> covar;
-           //   covar.resize(3);
-           //   covar.clear();
-           //   covar(0, 0) = controlPoint.aprioricovar(0); // DNE
-           //   covar(0, 1) = controlPoint.aprioricovar(1); // DNE
-           //   covar(0, 2) = controlPoint.aprioricovar(2); // DNE
-           //   covar(1, 1) = controlPoint.aprioricovar(3); // DNE
-           //   covar(1, 2) = controlPoint.aprioricovar(4); // ""
-           //   covar(2, 2) = controlPoint.aprioricovar(5); // ""
-           //   apriori.SetRectangularMatrix(covar);
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(0)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(1)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(2)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(3)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(4)); // DNE
+          protoPoint.add_aprioricovar(controlPoint->aprioricovar(5)); // DNE
+          
           }
         }
       }
 
-      protoPoint.set_latitudeconstrained(controlPoint.IsLatitudeConstrained());
-      protoPoint.set_longitudeconstrained(controlPoint.IsLongitudeConstrained());
-      protoPoint.set_radiusconstrained(controlPoint.IsRadiusConstrained());
+      protoPoint.set_latitudeconstrained(controlPoint->IsLatitudeConstrained());
+      protoPoint.set_longitudeconstrained(controlPoint->IsLongitudeConstrained());
+      protoPoint.set_radiusconstrained(controlPoint->IsRadiusConstrained());
 
 
-      if (controlPoint.HasAdjustedCoordinates()) {
+      if (controlPoint->HasAdjustedCoordinates()) {
 
-        protoPoint.set_adjustedx(controlPoint.AdjustedX());
-        protoPoint.set_adjustedy(controlPoint.AdjustedY());
-        protoPoint.set_adjustedz(controlPoint.AdjustedZ());
+        protoPoint.set_adjustedx(controlPoint->AdjustedX());
+        protoPoint.set_adjustedy(controlPoint->AdjustedY());
+        protoPoint.set_adjustedz(controlPoint->AdjustedZ());
 
-        if (controlPoint.AdjustedCovarSize()) { // DNE
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(0));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(1));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(2));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(3));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(4));
-          protoPoint.add_adjustedcovar(controlPoint.AdjustedCovar(5));
+        if (controlPoint->AdjustedCovarSize()) { // DNE
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(0));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(1));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(2));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(3));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(4));
+          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(5));
 
 
           }
@@ -1980,18 +1955,17 @@ namespace Isis {
       }
 
       // Converting Measures
-      for (int j = 0; j < controlPoint.GetNumMeasures(); j++) {
+      for (int j = 0; j < controlPoint->GetNumMeasures(); j++) {
 
         const ControlMeasure &
-            controlMeasure = controlPoint.GetMeasures(j);
+            controlMeasure = controlPoint->GetMeasure(j);
 
         ControlPointFileEntryV0005_Measure protoMeasure;
 
-        
-        if (controlPoint.HasReferenceIndex() && // DNE or covered by different function?
-           controlPoint.IndexOfRefMeasure() == j) {
+        // DNE or covered by different function?
+        if (controlPoint->HasReferenceIndex() && controlPoint->IndexOfRefMeasure() == j) {
              protoPoint.set_referenceindex(j);
-
+             
           // This isn't inside of the ControlPointFileEntryV0005, should it be?
           // pvlMeasure += PvlKeyword("Reference", "True");
         }
@@ -2089,8 +2063,8 @@ namespace Isis {
           protoMeasure.add_log(logData);
         }
 
-        if (controlPoint.HasReferenceIndex() && // DNE or covered by different function?
-           controlPoint.IndexOfRefMeasure() == j) {
+        if (controlPoint->HasReferenceIndex() && // DNE or covered by different function?
+           controlPoint->IndexOfRefMeasure() == j) {
              protoPoint.set_referenceindex(j);
 
           // This isn't inside of the ControlPointFileEntryV0005, should it be?
@@ -2103,7 +2077,7 @@ namespace Isis {
       fileStream->WriteVarint32(msgSize);
       
       if ( !protoPoint.SerializeToCodedStream(fileStream.data()) ) {
-        QString err = "Error writing to coded PB stream";
+        QString err = "Error writing to coded protobuf stream";
         throw IException(IException::Programmer, err, _FILEINFO_);
       }
 
