@@ -182,13 +182,13 @@ namespace Isis {
         QString description;
         QString userName;
       };
-      typedef struct ControlNetHeaderV0001 ControlNetHeaderV0002;
-      typedef struct ControlNetHeaderV0001 ControlNetHeaderV0003;
-      typedef struct ControlNetHeaderV0001 ControlNetHeaderV0004;
-      typedef struct ControlNetHeaderV0001 ControlNetHeaderV0005;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0002;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0003;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0004;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0005;
 
-      typedef struct ControlPointV0003 ControlPointV0004;
-      typedef struct ControlPointV0003 ControlPointV0005;
+      typedef ControlPointV0003 ControlPointV0004;
+      typedef ControlPointV0003 ControlPointV0005;
 
       void read(const FileName netFile);
 

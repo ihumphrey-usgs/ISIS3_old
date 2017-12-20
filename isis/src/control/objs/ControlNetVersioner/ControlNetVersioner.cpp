@@ -2088,7 +2088,7 @@ namespace Isis {
       output.close();
     } 
     catch (Exception e) {
-      string msg = "Can't write control net file" 
+      QString msg = "Can't write control net file"; 
       throw IException(IException::Io, msg, _FILEINFO_);
     }
   }
