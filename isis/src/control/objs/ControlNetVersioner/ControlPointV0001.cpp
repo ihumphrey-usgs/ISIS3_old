@@ -2,9 +2,14 @@
 
 #include <QString>
 
-#include "ControlPointV0001.h"
+#include "ControlMeasureLogData.h"
 #include "Distance.h"
+#include "IException.h"
+#include "Latitude.h"
+#include "Longitude.h"
+#include "NaifStatus.h"
 #include "Pvl.h"
+#include "PvlContainer.h"
 #include "SurfacePoint.h"
 #include "Target.h"
 
@@ -82,13 +87,13 @@ namespace Isis {
     else if ( pointObject.hasKeyword("X")
               && pointObject.hasKeyword("Y")
               && pointObject.hasKeyword("Z") ) {
-      m_pointData->set_adjustedx( pointObject["Latitude"][0] );
-      m_pointData->set_adjustedy( pointObject["Longitude"][0] );
-      m_pointData->set_adjustedz( pointObject["Radius"][0] );
+      m_pointData->set_adjustedx( toDouble(pointObject["Latitude"][0]) );
+      m_pointData->set_adjustedy( toDouble(pointObject["Longitude"][0]) );
+      m_pointData->set_adjustedz( toDouble(pointObject["Radius"][0]) );
     }
     else {
       QString msg = "Unable to find adjusted surface point values for the control point.";
-      throw IException(e, IException::Io, msg, _FILEINFO_);
+      throw IException(IException::Io, msg, _FILEINFO_);
     }
 
     // copy over the apriori surface point
@@ -114,7 +119,7 @@ namespace Isis {
     }
     else {
       QString msg = "Unable to find apriori surface point values for the control point.";
-      throw IException(e, IException::Io, msg, _FILEINFO_);
+      throw IException(IException::Io, msg, _FILEINFO_);
     }
 
     // Ground points were previously flagged by the Held keyword being true.
@@ -318,38 +323,38 @@ namespace Isis {
     //  Process Measures
     for (int groupIndex = 0; groupIndex < pointObject.groups(); groupIndex ++) {
       PvlGroup &group = pointObject.group(groupIndex);
-      ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure measure;
+      ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure measure;
 
       // Copy strings, booleans, and doubles
       copy(group, "SerialNumber",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_serialnumber);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_serialnumber);
       copy(group, "ChooserName",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_choosername);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_choosername);
       copy(group, "DateTime",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_datetime);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_datetime);
       copy(group, "Diameter",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_diameter);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_diameter);
       copy(group, "EditLock",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_editlock);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_editlock);
       copy(group, "Ignore",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_ignore);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_ignore);
       copy(group, "JigsawRejected",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_jigsawrejected);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_jigsawrejected);
       copy(group, "AprioriSample",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_apriorisample);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_apriorisample);
       copy(group, "AprioriLine",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_aprioriline);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_aprioriline);
       copy(group, "SampleSigma",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_samplesigma);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_samplesigma);
       copy(group, "LineSigma",
-           measure, &ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::set_linesigma);
+           measure, &ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::set_linesigma);
 
       // The sample, line, sample residual, and line residual are nested in another structure
       // inside the measure, so they cannot be copied with the conenience methods.
       if (group.hasKeyword("Sample")) {
         // The sample may not be a numeric value
         // in this case set it to 0 and ignore the measure
-        double value
+        double value;
         try {
           value = toDouble(group["Sample"][0]);
         }
@@ -357,13 +362,13 @@ namespace Isis {
           value = 0;
           m_pointData->set_ignore(true);
         }
-        measure.measurement().set_sample(value);
+        measure.mutable_measurement()->set_sample(value);
         group.deleteKeyword("Sample");
       }
       if (group.hasKeyword("Line")) {
         // The line may not be a numeric value
         // in this case set it to 0 and ignore the measure
-        double value
+        double value;
         try {
           value = toDouble(group["Line"][0]);
         }
@@ -371,17 +376,17 @@ namespace Isis {
           value = 0;
           m_pointData->set_ignore(true);
         }
-        measure.measurement().set_line(value);
+        measure.mutable_measurement()->set_line(value);
         group.deleteKeyword("Line");
       }
       if (group.hasKeyword("ErrorSample")) {
         double value = toDouble(group["ErrorSample"][0]);
-        measure.measurement().set_sampleresidual(value);
+        measure.mutable_measurement()->set_sampleresidual(value);
         group.deleteKeyword("ErrorSample");
       }
       if (group.hasKeyword("ErrorLine")) {
         double value = toDouble(group["ErrorLine"][0]);
-        measure.measurement().set_lineresidual(value);
+        measure.mutable_measurement()->set_lineresidual(value);
         group.deleteKeyword("ErrorLine");
       }
 
@@ -397,19 +402,19 @@ namespace Isis {
         QString type = group["MeasureType"][0].toLower();
         if (type == "estimated"
             || type == "unmeasured") {
-          measure.set_type(ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::Candidate);
+          measure.set_type(ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::Candidate);
         }
         else if (type == "manual") {
-          measure.set_type(ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::Manual);
+          measure.set_type(ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::Manual);
         }
         else if (type == "automatic"
                  || type == "validatedmanual"
                  || type == "automaticpixel") {
-          measure.set_type(ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::RegisteredPixel);
+          measure.set_type(ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::RegisteredPixel);
         }
         else if (type == "validatedautomatic"
                  || type == "automaticsubpixel") {
-          measure.set_type(ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::RegisteredSubPixel);
+          measure.set_type(ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::RegisteredSubPixel);
         }
         else {
           throw IException(IException::Io,
@@ -425,18 +430,6 @@ namespace Isis {
             || group[cmKeyIndex].name() == "ZScore"
             || group[cmKeyIndex].name() == "ErrorMagnitude") {
           group.deleteKeyword(cmKeyIndex);
-        }
-      }
-
-      for (int key = 0; key < group.keywords(); key++) {
-        ControlMeasureLogData interpreter(group[key]);
-        if (!interpreter.IsValid()) {
-          QString msg = "Unhandled or duplicate keywords in control measure ["
-                        + group[key].name() + "]";
-          throw IException(IException::Programmer, msg, _FILEINFO_);
-        }
-        else {
-          *measure.add_log() = interpreter.ToProtocolBuffer();
         }
       }
 
@@ -489,7 +482,7 @@ namespace Isis {
     value = value.toLower();
 
     if (value == "true" || value == "yes")
-      (point->*setter)(true);
+      (point.data()->*setter)(true);
   }
 
 
@@ -509,7 +502,7 @@ namespace Isis {
    */
   void ControlPointV0001::copy(PvlContainer &container,
                                QString keyName,
-                               QSharedPointer<ControlNetFileProtoV0001_PBControlPoint> &point,
+                               QSharedPointer<ControlNetFileProtoV0001_PBControlPoint> point,
                                void (ControlNetFileProtoV0001_PBControlPoint::*setter)(double)) {
 
     if (!container.hasKeyword(keyName))
@@ -517,7 +510,7 @@ namespace Isis {
 
     double value = toDouble(container[keyName][0]);
     container.deleteKeyword(keyName);
-    (point->*setter)(value);
+    (point.data()->*setter)(value);
   }
 
 
@@ -537,7 +530,7 @@ namespace Isis {
    */
   void ControlPointV0001::copy(PvlContainer &container,
                                QString keyName,
-                               QSharedPointer<ControlNetFileProtoV0001_PBControlPoint> &point,
+                               QSharedPointer<ControlNetFileProtoV0001_PBControlPoint> point,
                                void (ControlNetFileProtoV0001_PBControlPoint::*setter)(const std::string&)) {
 
     if (!container.hasKeyword(keyName))
@@ -545,7 +538,7 @@ namespace Isis {
 
     QString value = container[keyName][0];
     container.deleteKeyword(keyName);
-    (point->*setter)(value);
+    (point.data()->*setter)(value.toLatin1().data());
   }
 
 
@@ -565,8 +558,8 @@ namespace Isis {
    */
   void ControlPointV0001::copy(PvlContainer &container,
                                QString keyName,
-                               ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure &measure,
-                               void (ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::*setter)(bool)) {
+                               ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure &measure,
+                               void (ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::*setter)(bool)) {
 
     if (!container.hasKeyword(keyName))
       return;
@@ -596,8 +589,8 @@ namespace Isis {
    */
   void ControlPointV0001::copy(PvlContainer &container,
                                QString keyName,
-                               ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure &measure,
-                               void (ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::*setter)(double)) {
+                               ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure &measure,
+                               void (ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::*setter)(double)) {
 
     if (!container.hasKeyword(keyName))
       return;
@@ -624,8 +617,8 @@ namespace Isis {
    */
   void ControlPointV0001::copy(PvlContainer &container,
                                QString keyName,
-                               ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure &measure,
-                               void (ControlNetFileProtoV0001_PBControlPoint::PBControlMeasure::*setter)
+                               ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure &measure,
+                               void (ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::*setter)
                                       (const std::string &)) {
 
     if (!container.hasKeyword(keyName))
@@ -633,6 +626,6 @@ namespace Isis {
 
     QString value = container[keyName][0];
     container.deleteKeyword(keyName);
-    (measure.*set)(value);
+    (measure.*setter)(value.toLatin1().data());
   }
 }
