@@ -30,6 +30,10 @@
 #include <QVector>
 
 #include "ControlPoint.h"
+#include "ControlPointV0001.h"
+#include "ControlPointV0002.h"
+#include "ControlPointV0003.h"
+
 
 class QString;
 
