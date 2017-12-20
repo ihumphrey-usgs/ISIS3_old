@@ -1413,7 +1413,10 @@ namespace Isis {
     }
 
     for (int i = 0; i < measure.log_size(); i++) {
-      ControlMeasureLogData logEntry(measure.log(i));
+      const ControlPointFileEntryV0002_Measure_MeasureLogData &protoLog = measure.log(i);
+      ControlMeasureLogData logEntry
+      logEntry.SetNumericalValue( protoLog.doubledatavalue() );
+      logEntry.SetDataType( (ControlMeasureLogData::NumericLogDataType) protoLog.doubledatatype() );
       newMeasure->SetLogData(logEntry);
     }
     return newMeasure;
@@ -1669,8 +1672,8 @@ namespace Isis {
           protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(3));
           protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(4));
           protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(5));
-          }
         }
+      }
 
 
       // Converting Measures
@@ -1757,24 +1760,21 @@ namespace Isis {
         // in ControlPoint.
         protoMeasure.set_jigsawrejected(controlMeasure.JigsawRejected()));
 
-
+        QVector<ControlMeasureLogData> measureLogs = controlMeasure.GetLogDataEntries();
         for (int logEntry = 0;
-            logEntry < controlMeasure.LogSize(); // DNE?
+            logEntry < measureLogs.size(); // DNE?
             logEntry ++) {
 
-          const ControlMeasureLogData &log =
-                controlMeasure.GetLogData(logEntry); // Not sure this is right.
+          const ControlMeasureLogData &log = measureLogs[i];
 
           // These methods might not not exist, we may need to wrap each of These
           // In if/else statements because they're optional values.
           ControlPointFileEntryV0002_Measure_MeasureLogData logData;
 
-          logData.set_doubledatatype(log.GetDoubleDataType());
-          logData.set_doubledatavalue(log.GetDoubleDataValue());
-          logData.set_booldatatype(log.GetBoolDataType());
-          logData.set_booldatavalue(log.getBoolDataValue());
+          logData.set_doubledatatype( (int) log.GetDataType() );
+          logData.set_doubledatavalue( log.GetNumericalValue() );
 
-          protoMeasure.add_log(logData);
+          *protoMeasure.add_log() = logData;
         }
 
         if (controlPoint->HasRefMeasure() && controlPoint->IndexOfRefMeasure() == j) {
