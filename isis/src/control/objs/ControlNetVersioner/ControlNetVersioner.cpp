@@ -250,62 +250,50 @@ namespace Isis {
                         protobufPoint.GetAprioriRadiusSourceFile());
         }
 
-      if (controlPoint.HasAprioriCoordinates()) {
-        pvlPoint += PvlKeyword("AprioriX", toString(controlPoint.GetAprioriX()), "meters");
-        pvlPoint += PvlKeyword("AprioriY", toString(controlPoint.GetAprioriY()), "meters");
-        pvlPoint += PvlKeyword("AprioriZ", toString(controlPoint.GetAprioriZ()), "meters");
+      // add surface point x/y/z, convert to lat,lon,radius and output as comment
+      SurfacePoint aprioriSurfacePoint = controlPoint->GetAprioriSurfacePoint();
+      if (aprioriSurfacePoint.Valid()) {
+        PvlKeyword aprioriX("AprioriX", toString(aprioriSurfacePoint.GetX().meters()), "meters");
+        PvlKeyword aprioriY("AprioriY", toString(aprioriSurfacePoint.GetY().meters()), "meters");
+        PvlKeyword aprioriZ("AprioriZ", toString(aprioriSurfacePoint.GetZ().meters()), "meters");
 
-        // Get surface point, convert to lat,lon,radius and output as comment
-        SurfacePoint apriori;
-        apriori.SetRectangular(
-                Displacement(controlPoint.GetAprioriX(),Displacement::Meters),
-                Displacement(controlPoint.GetAprioriY(),Displacement::Meters),
-                Displacement(controlPoint.GetAprioriZ(),Displacement::Meters));
-        pvlPoint.findKeyword("AprioriX").addComment("AprioriLatitude = " +
-                                 toString(apriori.GetLatitude().degrees()) +
-                                 " <degrees>");
-        pvlPoint.findKeyword("AprioriY").addComment("AprioriLongitude = " +
-                                 toString(apriori.GetLongitude().degrees()) +
-                                 " <degrees>");
-        pvlPoint.findKeyword("AprioriZ").addComment("AprioriRadius = " +
-                                 toString(apriori.GetLocalRadius().meters()) +
-                                 " <meters>");
+        aprioriX.addComment("AprioriLatitude = " 
+                            + toString(aprioriSurfacePoint.GetLatitude().degrees())
+                            + " <degrees>");
+        aprioriY.addComment("AprioriLongitude = " 
+                            + toString(aprioriSurfacePoint.GetLongitude().degrees()) 
+                            + " <degrees>");
+
+        aprioriZ.addComment("AprioriRadius = " 
+                            + toString(aprioriSurfacePoint.GetLocalRadius().meters()) 
+                            + " <meters>");
+
+        pvlPoint += aprioriX;
+        pvlPoint += aprioriY;
+        pvlPoint += aprioriZ;
 
         // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
-        if (controlPoint.aprioricovar_size()) { // DNE
+        symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
+        if (aprioriCovarianceMatrix.size() > 0) {
           PvlKeyword matrix("AprioriCovarianceMatrix");
-          matrix += toString(controlPoint.aprioricovar(0)); // DNE
-          matrix += toString(controlPoint.aprioricovar(1)); // DNE
-          matrix += toString(controlPoint.aprioricovar(2)); // DNE
-          matrix += toString(controlPoint.aprioricovar(3)); // DNE
-          matrix += toString(controlPoint.aprioricovar(4)); // DNE
-          matrix += toString(controlPoint.aprioricovar(5)); // DNE
-          pvlPoint += matrix;
+          matrix += toString(aprioriCovarianceMatrix(0, 0));
+          matrix += toString(aprioriCovarianceMatrix(0, 1));
+          matrix += toString(aprioriCovarianceMatrix(0, 2));
+          matrix += toString(aprioriCovarianceMatrix(1, 1));
+          matrix += toString(aprioriCovarianceMatrix(1, 2));
+          matrix += toString(aprioriCovarianceMatrix(2, 2));
 
           if (pvlRadii.hasKeyword("EquatorialRadius")) {
-            apriori.SetRadii(
-                         Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                         Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                         Distance(pvlRadii["PolarRadius"],Distance::Meters));
-            symmetric_matrix<double, upper> covar;
-            covar.resize(3);
-            covar.clear();
-            covar(0, 0) = controlPoint.aprioricovar(0); // DNE
-            covar(0, 1) = controlPoint.aprioricovar(1); // DNE
-            covar(0, 2) = controlPoint.aprioricovar(2); // DNE
-            covar(1, 1) = controlPoint.aprioricovar(3); // DNE
-            covar(1, 2) = controlPoint.aprioricovar(4); // ""
-            covar(2, 2) = controlPoint.aprioricovar(5); // ""
-            apriori.SetRectangularMatrix(covar);
-            QString sigmas = "AprioriLatitudeSigma = " +
-                             toString(apriori.GetLatSigmaDistance().meters()) +
-                             " <meters>  AprioriLongitudeSigma = " +
-                             toString(apriori.GetLonSigmaDistance().meters()) +
-                             " <meters>  AprioriRadiusSigma = " +
-                             toString(apriori.GetLocalRadiusSigma().meters()) +
-                             " <meters>";
-            pvlPoint.findKeyword("AprioriCovarianceMatrix").addComment(sigmas);
+            QString sigmas = "AprioriLatitudeSigma = " 
+                             + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
+                             + " <meters>  AprioriLongitudeSigma = "
+                             + toString(aprioriSurfacePoint.GetLonSigmaDistance().meters())
+                             + " <meters>  AprioriRadiusSigma = "
+                             + toString(aprioriSurfacePoint.GetLocalRadiusSigma().meters())
+                             + " <meters>";
+            matrix.addComment(sigmas);
           }
+          pvlPoint += matrix;
         }
       }
 
@@ -321,61 +309,48 @@ namespace Isis {
         pvlPoint += PvlKeyword("RadiusConstrained", "True");
       }
 
-      if (controlPoint.HasAdjustedX()) {
-        pvlPoint += PvlKeyword("AdjustedX", toString(controlPoint.AdjustedX()), "meters");
-        pvlPoint += PvlKeyword("AdjustedY", toString(controlPoint.AdjustedY()), "meters");
-        pvlPoint += PvlKeyword("AdjustedZ", toString(controlPoint.AdjustedZ()), "meters");
+      // adj surface point, convert to lat,lon,radius and output as comment
+      SurfacePoint adjustedSurfacePoint = controlPoint->GetAdjustedSurfacePoint();
+      if (adjustedSurfacePoint.Valid()) {
+        PvlKeyword adjustedX("AdjustedX", toString(adjustedSurfacePoint.GetX().meters()), "meters");
+        PvlKeyword adjustedY("AdjustedY", toString(adjustedSurfacePoint.GetY().meters()), "meters");
+        PvlKeyword adjustedZ("AdjustedZ", toString(adjustedSurfacePoint.GetZ().meters()), "meters");
 
-        // Get surface point, convert to lat,lon,radius and output as comment
-        SurfacePoint adjusted;
-        adjusted.SetRectangular(
-                Displacement(controlPoint.AdjustedX(),Displacement::Meters),
-                Displacement(controlPoint.adjustedY(),Displacement::Meters),
-                Displacement(controlPoint.adjustedZ(),Displacement::Meters));
-        pvlPoint.findKeyword("AdjustedX").addComment("AdjustedLatitude = " +
-                                 toString(adjusted.GetLatitude().degrees()) +
-                                 " <degrees>");
-        pvlPoint.findKeyword("AdjustedY").addComment("AdjustedLongitude = " +
-                                 toString(adjusted.GetLongitude().degrees()) +
-                                 " <degrees>");
-        pvlPoint.findKeyword("AdjustedZ").addComment("AdjustedRadius = " +
-                                 toString(adjusted.GetLocalRadius().meters()) +
-                                 " <meters>");
+        adjustedX.addComment("AdjustedLatitude = " 
+                             + toString(adjustedSurfacePoint.GetLatitude().degrees())
+                             + " <degrees>");
+        adjustedY.addComment("AdjustedLongitude = "
+                             + toString(adjustedSurfacePoint.GetLongitude().degrees())
+                             + " <degrees>");
+        adjustedZ.addComment("AdjustedRadius = "
+                             + toString(adjustedSurfacePoint.GetLocalRadius().meters())
+                             + " <meters>");
 
-        if (controlPoint.AdjustedCovarSize()) { // DNE
+        pvlPoint += adjustedX;
+        pvlPoint += adjustedY;
+        pvlPoint += adjustedZ;
+
+        symmetric_matrix<double, upper> adjustedCovarianceMatrix = adjustedSurfacePoint.GetRectangularMatrix();
+        if (adjustedCovarianceMatrix.size() > 0) {
           PvlKeyword matrix("AdjustedCovarianceMatrix");
-          matrix += toString(controlPoint.AdjustedCovar(0));
-          matrix += toString(controlPoint.AdjustedCovar(1));
-          matrix += toString(controlPoint.AdjustedCovar(2));
-          matrix += toString(controlPoint.AdjustedCovar(3));
-          matrix += toString(controlPoint.AdjustedCovar(4));
-          matrix += toString(controlPoint.AdjustedCovar(5));
-          pvlPoint += matrix;
+          matrix += toString(adjustedCovarianceMatrix(0, 0));
+          matrix += toString(adjustedCovarianceMatrix(0, 1));
+          matrix += toString(adjustedCovarianceMatrix(0, 2));
+          matrix += toString(adjustedCovarianceMatrix(1, 1));
+          matrix += toString(adjustedCovarianceMatrix(1, 2));
+          matrix += toString(adjustedCovarianceMatrix(2, 2));
 
           if (pvlRadii.hasKeyword("EquatorialRadius")) {
-            adjusted.SetRadii(
-                         Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                         Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                         Distance(pvlRadii["PolarRadius"],Distance::Meters));
-            symmetric_matrix<double, upper> covar;
-            covar.resize(3);
-            covar.clear();
-            covar(0, 0) = controlPoint.AdjustedCovar(0);
-            covar(0, 1) = controlPoint.AdjustedCovar(1);
-            covar(0, 2) = controlPoint.AdjustedCovar(2);
-            covar(1, 1) = controlPoint.AdjustedCovar(3);
-            covar(1, 2) = controlPoint.AdjustedCovar(4);
-            covar(2, 2) = controlPoint.AdjustedCovar(5);
-            adjusted.SetRectangularMatrix(covar);
             QString sigmas = "AdjustedLatitudeSigma = " +
-                             toString(adjusted.GetLatSigmaDistance().meters()) +
-                             " <meters>  AdjustedLongitudeSigma = " +
-                             toString(adjusted.GetLonSigmaDistance().meters()) +
-                             " <meters>  AdjustedRadiusSigma = " +
-                             toString(adjusted.GetLocalRadiusSigma().meters()) +
-                             " <meters>";
-            pvlPoint.findKeyword("AdjustedCovarianceMatrix").addComment(sigmas);
+                             + toString(adjustedCovarianceMatrix.GetLatSigmaDistance().meters()
+                             + " <meters>  AdjustedLongitudeSigma = "
+                             + toString(adjustedCovarianceMatrix.GetLonSigmaDistance().meters()
+                             + " <meters>  AdjustedRadiusSigma = "
+                             + toString(adjustedCovarianceMatrix.GetLocalRadiusSigma().meters()
+                             + " <meters>";
+            matrix.addComment(sigmas);
           }
+          pvlPoint += matrix;
         }
       }
 
@@ -2172,24 +2147,21 @@ namespace Isis {
         protoPoint.set_aprioriradiussourcefile(protobufPoint.GetAprioriRadiusSourceFile());
       }
 
-      if (controlPoint->HasAprioriCoordinates()) {
+      SurfacePoint aprioriSurfacePoint = controlPoint->GetAprioriSurfacePoint();
+      if (aprioriSurfacePoint.Valid()) {
 
-        protoPoint.set_apriorix(controlPoint->AprioriX());
-        protoPoint.set_aprioriy(controlPoint->AprioriY());
-        protoPoint.set_aprioriz(controlPoint->AprioriZ());
+        protoPoint.set_apriorix(aprioriSurfacePoint.GetX().meters());
+        protoPoint.set_aprioriy(aprioriSurfacePoint.GetY().meters());
+        protoPoint.set_aprioriz(aprioriSurfacePoint.GetZ().meters());
 
-
-        if (controlPoint->AprioriCovarSize()) { // DNE
-
-          // Ensure this is the right way to add these values
-          protoPoint.add_aprioricovar(controlPoint->aprioricovar(0)); // DNE
-          protoPoint.add_aprioricovar(controlPoint->aprioricovar(1)); // DNE
-          protoPoint.add_aprioricovar(controlPoint->aprioricovar(2)); // DNE
-          protoPoint.add_aprioricovar(controlPoint->aprioricovar(3)); // DNE
-          protoPoint.add_aprioricovar(controlPoint->aprioricovar(4)); // DNE
-          protoPoint.add_aprioricovar(controlPoint->aprioricovar(5)); // DNE
-
-          }
+        symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
+        if (aprioriCovarianceMatrix.size() > 0) {
+          protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 0));
+          protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 1));
+          protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 2));
+          protoPoint.add_aprioricovar(aprioriCovarianceMatrix(1, 1));
+          protoPoint.add_aprioricovar(aprioriCovarianceMatrix(1, 2));
+          protoPoint.add_aprioricovar(aprioriCovarianceMatrix(2, 2));
         }
       }
 
@@ -2198,20 +2170,21 @@ namespace Isis {
       protoPoint.set_radiusconstrained(controlPoint->IsRadiusConstrained());
 
 
-      if (controlPoint->HasAdjustedCoordinates()) {
+      SurfacePoint adjustedSurfacePoint = controlPoint->GetAdjustedSurfacePoint();
+      if (adjustedSurfacePoint.Valid()) {
 
-        protoPoint.set_adjustedx(controlPoint->AdjustedX());
-        protoPoint.set_adjustedy(controlPoint->AdjustedY());
-        protoPoint.set_adjustedz(controlPoint->AdjustedZ());
+        protoPoint.set_adjustedx(adjustedSurfacePoint.GetX().meters());
+        protoPoint.set_adjustedy(adjustedSurfacePoint.GetY().meters());
+        protoPoint.set_adjustedz(adjustedSurfacePoint.GetZ().meters());
 
-        if (controlPoint->AdjustedCovarSize()) { // DNE
-          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(0));
-          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(1));
-          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(2));
-          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(3));
-          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(4));
-          protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(5));
-          }
+        symmetric_matrix<double, upper> adjustedCovarianceMatrix = adjustedSurfacePoint.GetRectangularMatrix();
+        if (adjustedCovarianceMatrix.size() > 0) {
+          protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 0));
+          protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 1));
+          protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 2));
+          protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(1, 1));
+          protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(1, 2));
+          protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(2, 2));
         }
       }
 
