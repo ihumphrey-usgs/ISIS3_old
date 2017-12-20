@@ -30,6 +30,10 @@
 #include <QVector>
 
 #include "ControlPoint.h"
+#include "ControlPointV0001.h"
+#include "ControlPointV0002.h"
+#include "ControlPointV0003.h"
+
 
 class QString;
 
@@ -180,13 +184,13 @@ namespace Isis {
         QString description;
         QString userName;
       };
-      typedef ControlNetHeaderV0002 ControlNetHeaderV0001;
-      typedef ControlNetHeaderV0003 ControlNetHeaderV0001;
-      typedef ControlNetHeaderV0004 ControlNetHeaderV0001;
-      typedef ControlNetHeaderV0005 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0002;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0003;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0004;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0005;
 
-      typedef ControlPointV0004 ControlPointV0003;
-      typedef ControlPointV0005 ControlPointV0003;
+      typedef ControlPointV0003 ControlPointV0004;
+      typedef ControlPointV0003 ControlPointV0005;
 
       void read(const FileName netFile);
 
@@ -210,8 +214,8 @@ namespace Isis {
 
       void setHeader(const ControlNetHeaderV0001 header);
 
-      void writeHeader(ZeroCopyOutputStream *fileStream);
-      void writeFirstPoint(ZeroCopyOutputStream *fileStream);
+      void writeHeader(google::protobuf::io::ZeroCopyOutputStream *fileStream);
+      int writeFirstPoint(google::protobuf::io::ZeroCopyOutputStream *fileStream);
 
       ControlNetHeaderV0005 m_header; /**< Header containing information about
                                            the whole network.*/
