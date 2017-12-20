@@ -1,7 +1,8 @@
 #include "ControlNetVersioner.h"
 
+#include <boost/numeric/ublas/symmetric.hpp>
+#include <boost/numeric/ublas/io.hpp>
 #include <string>
-
 #include <QDebug>
 
 #include "ControlMeasure.h"
@@ -218,7 +219,7 @@ namespace Isis {
 
       if (controlPoint->HasAprioriSurfacePointSourceFile()) {
         pvlPoint += PvlKeyword("AprioriXYZSourceFile",
-                        controlPoint.GetAprioriSurfacePointSourceFile());
+                        controlPoint->GetAprioriSurfacePointSourceFile());
       }
 
       switch (controlPoint->GetAprioriRadiusSource()) {
@@ -244,20 +245,20 @@ namespace Isis {
 
       if (controlPoint->HasAprioriRadiusSourceFile()) {
         pvlPoint += PvlKeyword("AprioriRadiusSourceFile",
-                        controlPoint.GetAprioriRadiusSourceFile());
+                        controlPoint->GetAprioriRadiusSourceFile());
         }
 
       if (controlPoint->HasAprioriCoordinates()) {
-        pvlPoint += PvlKeyword("AprioriX", toString(controlPoint.GetAprioriX()), "meters");
-        pvlPoint += PvlKeyword("AprioriY", toString(controlPoint.GetAprioriY()), "meters");
-        pvlPoint += PvlKeyword("AprioriZ", toString(controlPoint.GetAprioriZ()), "meters");
+        pvlPoint += PvlKeyword("AprioriX", toString(controlPoint->GetAprioriX().meters()), "meters");
+        pvlPoint += PvlKeyword("AprioriY", toString(controlPoint->GetAprioriY().meters()), "meters");
+        pvlPoint += PvlKeyword("AprioriZ", toString(controlPoint->GetAprioriZ().meters()), "meters");
 
         // Get surface point, convert to lat,lon,radius and output as comment
         SurfacePoint apriori;
         apriori.SetRectangular(
-                Displacement(controlPoint.GetAprioriX(),Displacement::Meters),
-                Displacement(controlPoint.GetAprioriY(),Displacement::Meters),
-                Displacement(controlPoint.GetAprioriZ(),Displacement::Meters));
+                Displacement(controlPoint->GetAprioriX().meters(),Displacement::Meters),
+                Displacement(controlPoint->GetAprioriY().meters(),Displacement::Meters),
+                Displacement(controlPoint->GetAprioriZ().meters(),Displacement::Meters));
         pvlPoint.findKeyword("AprioriX").addComment("AprioriLatitude = " +
                                  toString(apriori.GetLatitude().degrees()) +
                                  " <degrees>");
@@ -271,12 +272,12 @@ namespace Isis {
         // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
         if (controlPoint->aprioricovar_size()) { // DNE
           PvlKeyword matrix("AprioriCovarianceMatrix");
-          matrix += toString(controlPoint->aprioricovar(0)); // DNE
-          matrix += toString(controlPoint->aprioricovar(1)); // DNE
-          matrix += toString(controlPoint->aprioricovar(2)); // DNE
-          matrix += toString(controlPoint->aprioricovar(3)); // DNE
-          matrix += toString(controlPoint->aprioricovar(4)); // DNE
-          matrix += toString(controlPoint->aprioricovar(5)); // DNE
+          matrix += toString(controlPoint->AprioriCovar(0)); // DNE
+          matrix += toString(controlPoint->AprioriCovar(1)); // DNE
+          matrix += toString(controlPoint->AprioriCovar(2)); // DNE
+          matrix += toString(controlPoint->AprioriCovar(3)); // DNE
+          matrix += toString(controlPoint->AprioriCovar(4)); // DNE
+          matrix += toString(controlPoint->AprioriCovar(5)); // DNE
           pvlPoint += matrix;
 
           if (pvlRadii.hasKeyword("EquatorialRadius")) {
@@ -287,12 +288,12 @@ namespace Isis {
             symmetric_matrix<double, upper> covar;
             covar.resize(3);
             covar.clear();
-            covar(0, 0) = controlPoint->aprioricovar(0); // DNE
-            covar(0, 1) = controlPoint->aprioricovar(1); // DNE
-            covar(0, 2) = controlPoint->aprioricovar(2); // DNE
-            covar(1, 1) = controlPoint->aprioricovar(3); // DNE
-            covar(1, 2) = controlPoint->aprioricovar(4); // ""
-            covar(2, 2) = controlPoint->aprioricovar(5); // ""
+            covar(0, 0) = controlPoint->AprioriCovar(0); // DNE
+            covar(0, 1) = controlPoint->AprioriCovar(1); // DNE
+            covar(0, 2) = controlPoint->AprioriCovar(2); // DNE
+            covar(1, 1) = controlPoint->AprioriCovar(3); // DNE
+            covar(1, 2) = controlPoint->AprioriCovar(4); // ""
+            covar(2, 2) = controlPoint->AprioriCovar(5); // ""
             apriori.SetRectangularMatrix(covar);
             QString sigmas = "AprioriLatitudeSigma = " +
                              toString(apriori.GetLatSigmaDistance().meters()) +
@@ -318,17 +319,17 @@ namespace Isis {
         pvlPoint += PvlKeyword("RadiusConstrained", "True");
       }
 
-      if (controlPoint->HasAdjustedX()) {
-        pvlPoint += PvlKeyword("AdjustedX", toString(controlPoint->AdjustedX()), "meters");
-        pvlPoint += PvlKeyword("AdjustedY", toString(controlPoint->AdjustedY()), "meters");
-        pvlPoint += PvlKeyword("AdjustedZ", toString(controlPoint->AdjustedZ()), "meters");
+      if (controlPoint->HasAdjustedCoordinates()) {
+        pvlPoint += PvlKeyword("AdjustedX", toString(controlPoint->GetAdjustedX().meters()), "meters");
+        pvlPoint += PvlKeyword("AdjustedY", toString(controlPoint->GetAdjustedY().meters()), "meters");
+        pvlPoint += PvlKeyword("AdjustedZ", toString(controlPoint->GetAdjustedZ().meters()), "meters");
 
         // Get surface point, convert to lat,lon,radius and output as comment
         SurfacePoint adjusted;
         adjusted.SetRectangular(
-                Displacement(controlPoint->AdjustedX(),Displacement::Meters),
-                Displacement(controlPoint->adjustedY(),Displacement::Meters),
-                Displacement(controlPoint->adjustedZ(),Displacement::Meters));
+                Displacement(controlPoint->GetAdjustedX().meters(),Displacement::Meters),
+                Displacement(controlPoint->GetAdjustedY().meters(),Displacement::Meters),
+                Displacement(controlPoint->GetAdjustedZ().meters(),Displacement::Meters));
         pvlPoint.findKeyword("AdjustedX").addComment("AdjustedLatitude = " +
                                  toString(adjusted.GetLatitude().degrees()) +
                                  " <degrees>");
@@ -454,7 +455,7 @@ namespace Isis {
                                    "pixels");
         }
 
-        pvlMeasure += PvlKeyword("JigsawRejected", toString(controlMeasure.IsJigsawRejected()));
+        pvlMeasure += PvlKeyword("JigsawRejected", toString(controlMeasure.JigsawRejected()));
 
         for (int logEntry = 0;
             logEntry < controlMeasure.LogSize(); // DNE?
@@ -516,7 +517,7 @@ namespace Isis {
   void ControlNetVersioner::readPvl(const Pvl &network) {
       const PvlObject &controlNetwork = network.findObject("ControlNetwork");
 
-      int version = 1
+      int version = 1;
 
       if (controlNetwork.hasKeyword("Version")) {
         version = toInt(controlNetwork["Version"][0]);
@@ -1155,21 +1156,21 @@ namespace Isis {
     ControlPointFileEntryV0002 protoPoint = point.pointData();
     QSharedPointer<ControlPoint> controlPoint =
           new QSharedPointer<ControlPoint>(protoPoint.id().c_str());
-    controlPoint->SetChooserName(protoPoint.chooserName().c_str());
+    controlPoint->SetChooserName(protoPoint.choosername().c_str());
 
     // setting point type
     ControlPoint::PointType pointType;
     switch (protoPoint.type()) {
       case ControlPointFileEntryV0002_PointType_obsolete_Tie:
       case ControlPointFileEntryV0002_PointType_Free:
-        pointType = Free;
+        pointType = ControlPoint::PointType::Free;
         break;
       case ControlPointFileEntryV0002_PointType_Constrained:
-        pointType = Constrained;
+        pointType = ControlPoint::PointType::Constrained;
         break;
       case ControlPointFileEntryV0002_PointType_obsolete_Ground:
       case ControlPointFileEntryV0002_PointType_Fixed:
-        pointType = Fixed;
+        pointType = ControlPoint::PointType::Fixed;
         break;
       default:
         QString msg = "Unable to create ControlPoint [" + protoPoint.id().c_str() + "] from file. "
