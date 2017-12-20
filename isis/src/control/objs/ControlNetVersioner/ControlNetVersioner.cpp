@@ -247,7 +247,7 @@ namespace Isis {
                         controlPoint.GetAprioriRadiusSourceFile());
         }
 
-      if (controlPoint->HasAprioriCoordinates()) { 
+      if (controlPoint->HasAprioriCoordinates()) {
         pvlPoint += PvlKeyword("AprioriX", toString(controlPoint.GetAprioriX()), "meters");
         pvlPoint += PvlKeyword("AprioriY", toString(controlPoint.GetAprioriY()), "meters");
         pvlPoint += PvlKeyword("AprioriZ", toString(controlPoint.GetAprioriZ()), "meters");
@@ -413,7 +413,7 @@ namespace Isis {
           pvlMeasure += PvlKeyword("Ignore", "True");
         }
 
-        if (controlMeasure.HasSample()) { 
+        if (controlMeasure.HasSample()) {
           pvlMeasure += PvlKeyword("Sample", toString(controlMeasure.GetSample()));
 
         }
@@ -1955,7 +1955,7 @@ namespace Isis {
       newMeasure->SetLogData(logEntry);
     }
     return newMeasure;
-  } 
+  }
 
 
   /**
@@ -1992,9 +1992,9 @@ namespace Isis {
       delete [] blankLabel;
 
       streampos startCoreHeaderPos = output.tellp();
-      
+
       OStreamOutputStream *fileStream(output);
-      
+
       writeHeader(fileStream);
 
       BigInt pointByteTotal = 0;
@@ -2025,9 +2025,9 @@ namespace Isis {
       protoCore.addKeyword(PvlKeyword("HeaderBytes", toString((BigInt) coreHeaderSize)));
 
       BigInt pointsStartByte = (BigInt) (startCoreHeaderPos + coreHeaderSize);
-      
+
       protoCore.addKeyword(PvlKeyword("PointsStartByte", toString(pointsStartByte)));
-                        
+
       protoCore.addKeyword(PvlKeyword("PointsBytes",
                            toString(pointByteTotal)));
       protoObj.addObject(protoCore);
@@ -2057,9 +2057,9 @@ namespace Isis {
       output << p;
       output << '\n';
       output.close();
-    } 
+    }
     catch (Exception e) {
-      QString msg = "Can't write control net file"; 
+      QString msg = "Can't write control net file";
       throw IException(IException::Io, msg, _FILEINFO_);
     }
   }
@@ -2187,7 +2187,7 @@ namespace Isis {
 
         }
       }
-      
+
 
       protoPoint.set_latitudeconstrained(controlPoint->IsLatitudeConstrained());
       protoPoint.set_longitudeconstrained(controlPoint->IsLongitudeConstrained());
@@ -2207,9 +2207,9 @@ namespace Isis {
           protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(3));
           protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(4));
           protoPoint.add_adjustedcovar(controlPoint->AdjustedCovar(5));
-          }
         }
-      
+      }
+
 
       // Converting Measures
       for (int j = 0; j < controlPoint->GetNumMeasures(); j++) {
@@ -2232,19 +2232,19 @@ namespace Isis {
             case (ControlMeasure::MeasureType::Candidate):
                 protoMeasure.set_measuretype(ControlPointFileEntryV0005_Measure_MeasureType_Candidate);
                 break;
-            
+
             case (ControlMeasure::MeasureType::Manual):
                 protoMeasure.set_measuretype(ControlPointFileEntryV0005_Measure_MeasureType_Manual);
                 break;
-            
+
             case (ControlMeasure::RegisteredPixel):
                 protoMeasure.set_measuretype(ControlPointFileEntryV0005_Measure_MeasureType_RegisteredPixel);
                 break;
-            
+
             case (ControlMeasure::RegisteredSubPixel):
                 protoMeasure.set_measuretype(ControlPointFileEntryV0005_Measure_MeasureType_RegisteredSubPixel);
                 break;
-        }        
+        }
 
         if (controlMeasure.HasChooserName()) {
           protoMeasure.set_choosername(controlMeasure.GetChooserName());
@@ -2298,24 +2298,21 @@ namespace Isis {
         // in ControlPoint.
         protoMeasure.set_jigsawrejected(controlMeasure.JigsawRejected()));
 
-
+        QVector<ControlMeasureLogData> measureLogs = controlMeasure.GetLogDataEntries();
         for (int logEntry = 0;
-            logEntry < controlMeasure.LogSize(); // DNE?
+            logEntry < measureLogs.size(); // DNE?
             logEntry ++) {
 
-          const ControlMeasureLogData &log =
-                controlMeasure.GetLogData(logEntry); // Not sure this is right.
+          const ControlMeasureLogData &log = measureLogs[i];
 
           // These methods might not not exist, we may need to wrap each of These
           // In if/else statements because they're optional values.
           ControlPointFileEntryV0005_Measure_MeasureLogData logData;
 
-          logData.set_doubledatatype(log.GetDoubleDataType());
-          logData.set_doubledatavalue(log.GetDoubleDataValue());
-          logData.set_booldatatype(log.GetBoolDataType());
-          logData.set_booldatavalue(log.getBoolDataValue());
+          logData.set_doubledatatype( (int) log.GetDataType() );
+          logData.set_doubledatavalue( log.GetNumericalValue() );
 
-          protoMeasure.add_log(logData);
+          *protoMeasure.add_log() = logData;
         }
 
         if (controlPoint->HasRefMeasure() && controlPoint->IndexOfRefMeasure() == j) {
@@ -2329,7 +2326,7 @@ namespace Isis {
 
       int msgSize(protoPoint.ByteSize());
       fileStream.WriteVarint32(msgSize);
-      
+
       if ( !protoPoint.SerializeToCodedStream(fileStream.data()) ) {
         QString err = "Error writing to coded protobuf stream";
         throw IException(IException::Programmer, err, _FILEINFO_);
