@@ -624,7 +624,7 @@ namespace Isis {
    * @returns bool True if a reference measure is set. 
    */
   bool ControlPoint::HasRefMeasure() const {
-    return !(referenceMeasure == NULL): 
+    return !(referenceMeasure == NULL);
   }
 
 
@@ -1419,7 +1419,7 @@ namespace Isis {
    * 
    * @return Displacement The adjusted x coordinate.
    */
-  Displacement ContorlPoint::GetAdjustedX() const { 
+  Displacement ControlPoint::GetAdjustedX() const { 
     return adjustedSurfacePoint.GetX();
   }
 
@@ -1429,7 +1429,7 @@ namespace Isis {
    * 
    * @return Displacement The adjusted y coordinate.
    */
-  Displacement ContorlPoint::GetAdjustedY() const { 
+  Displacement ControlPoint::GetAdjustedY() const { 
     return adjustedSurfacePoint.GetY();
   }
 
@@ -1439,7 +1439,7 @@ namespace Isis {
    * 
    * @return Displacement The adjusted z coordinate.
    */
-  Displacement ContorlPoint::GetAdjustedZ() const { 
+  Displacement ControlPoint::GetAdjustedZ() const { 
     return adjustedSurfacePoint.GetZ();
   }
 
@@ -1717,7 +1717,7 @@ namespace Isis {
    *  
    * @return bool true if the point is flagged as rejected by jigsaw
    */
-  bool ContolPoint::IsJigsawRejected() const {
+  bool ControlPoint::IsJigsawRejected() const {
     return jigsawRejected; 
   }
 
@@ -1731,7 +1731,7 @@ namespace Isis {
    * 
    * @return Displacement The apriori x coordinate.
    */
-  Displacement ContorlPoint::GetAprioriX() const { 
+  Displacement ControlPoint::GetAprioriX() const { 
     return aprioriSurfacePoint.GetX();
   }
 
@@ -1741,7 +1741,7 @@ namespace Isis {
    * 
    * @return Displacement The apriori y coordinate.
    */
-  Displacement ContorlPoint::GetAprioriY() const { 
+  Displacement ControlPoint::GetAprioriY() const { 
     return aprioriSurfacePoint.GetY();
   }
 
@@ -1751,7 +1751,7 @@ namespace Isis {
    * 
    * @return Displacement The apriori z coordinate.
    */
-  Displacement ContorlPoint::GetAprioriZ() const { 
+  Displacement ControlPoint::GetAprioriZ() const { 
     return aprioriSurfacePoint.GetZ();
   }
 
@@ -1833,7 +1833,7 @@ namespace Isis {
   *  
   * @return bool True if the surface point source file has been set.
   */
-  bool HasAprioriSurfacePointSourceFile() const {
+  bool ControlPoint::HasAprioriSurfacePointSourceFile() const {
     return !( aprioriSurfacePointSourceFile.isEmpty() || aprioriSurfacePointSourceFile.isNull() );
   }
 
@@ -1957,7 +1957,7 @@ namespace Isis {
    * measure.
    */
   int ControlPoint::IndexOfRefMeasure() const {
-    if (!hasRefMeasure()) {
+    if (!HasRefMeasure()) {
       QString msg = "There is no reference measure for point [" + id + "]."
           "  This also means of course that the point is empty!";
       throw IException(IException::Programmer, msg, _FILEINFO_);
