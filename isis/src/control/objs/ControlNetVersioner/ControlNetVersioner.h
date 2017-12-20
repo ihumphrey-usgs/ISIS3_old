@@ -141,7 +141,9 @@ namespace Isis {
    *  @history 2017-12-13 Jeannie Backer - Added target radii to createPoint(V0006).
    *  @history 2017-12-18 Adam Goins and Kristin Berry - Added new write() method.
    *  @history 2017-12-19 Kristin Berry - Corrected method names and general cleanup in toPvl and
-   *                            write for refactor.
+   *                          write for refactor.
+   *  @histroy 2017-12-20 Jesse Mapel - Made read and createPoint methods match new
+   *                          ControlPointV#### classes.
    */
   class ControlNetVersioner {
     class ControlPointV0001;
