@@ -1830,36 +1830,7 @@ namespace Isis {
         aprioriCovarianceMatrix(1, 2) = point.aprioricovar(4);
         aprioriCovarianceMatrix(2, 2) = point.aprioricovar(5);
         aprioriSurfacePoint.SetRectangularMatrix(aprioriCovarianceMatrix);
-
         // note: setting lat/lon/rad constrained happens when we call SetAprioriSurfacePoint()
-        // this method will look at the covar matrix for valid values and set accordingly.
-
-#if 0
-        if (Displacement(aprioriCovarianceMatrix(0, 0), Displacement::Meters).isValid()
-            || Displacement(aprioriCovarianceMatrix(1, 1), Displacement::Meters).isValid()) {
-
-          if (point.latitudeconstrained()) {
-            constraintStatus.set(LatitudeConstrained);
-          }
-          if (point.longitudeconstrained()) {
-            constraintStatus.set(LongitudeConstrained);
-          }
-          if (point.radiusconstrained()) {
-            constraintStatus.set(RadiusConstrained);
-          }
-
-        }
-        else if (Displacement(aprioriCovarianceMatrix(2, 2), Displacement::Meters).isValid()) {
-
-          if (point.latitudeconstrained()) {
-            constraintStatus.set(LatitudeConstrained);
-          }
-          if (point.radiusconstrained()) {
-            constraintStatus.set(RadiusConstrained);
-          }
-
-        }
-#endif
       }
 
       if (equatorialRadius.isValid() && polarRadius.isValid()) {
