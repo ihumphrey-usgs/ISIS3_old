@@ -1640,7 +1640,6 @@ namespace Isis {
 
       SurfacePoint aprioriSurfacePoint = controlPoint->GetAprioriSurfacePoint();
       if (aprioriSurfacePoint.Valid()) {
-
         protoPoint.set_apriorix(aprioriSurfacePoint.GetX().meters());
         protoPoint.set_aprioriy(aprioriSurfacePoint.GetY().meters());
         protoPoint.set_aprioriz(aprioriSurfacePoint.GetZ().meters());
@@ -1679,7 +1678,6 @@ namespace Isis {
           protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(2, 2));
         }
       }
-
 
       // Converting Measures
       for (int j = 0; j < controlPoint->GetNumMeasures(); j++) {
