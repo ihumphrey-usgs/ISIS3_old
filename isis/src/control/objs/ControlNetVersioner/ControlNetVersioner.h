@@ -30,6 +30,9 @@
 #include <QVector>
 
 #include "ControlPoint.h"
+#include "ControlPointV0001.h"
+#include "ControlPointV0002.h"
+#include "ControlPointV0003.h"
 
 class QString;
 
@@ -39,6 +42,9 @@ namespace Isis {
   class Pvl;
   class PvlContainer;
   class PvlObject;
+  class ControlPointV0001;
+  class ControlPointV0002;
+  class ControlPointV0003;
 
   /**
    * @brief Handle Various Control Network Versions
@@ -138,13 +144,12 @@ namespace Isis {
    *   @history 2017-12-18 Adam Goins and Kristin Berry - Added new write() method.
    *   @history 2017-12-19 Kristin Berry - Corrected method names and general cleanup in toPvl and
    *                           write for refactor.
+   *   @histroy 2017-12-20 Jesse Mapel - Made read and createPoint methods match new
+   *                           ControlPointV#### classes.
    *   @history 2017-12-20 Jeannie Backer - Updated toPvl and write methods to get surface point
    *                           information from the ControlPoint.
    */
   class ControlNetVersioner {
-    class ControlPointV0001;
-    class ControlPointV0002;
-    class ControlPointV0003;
 
     public:
       ControlNetVersioner(QSharedPointer<ControlNet> net);
@@ -161,7 +166,7 @@ namespace Isis {
       QSharedPointer<ControlPoint> takeFirstPoint();
 
       void write(FileName netFile);
-      Pvl &toPvl();
+      Pvl toPvl();
 
     private:
       // These three methods are private for safety reasons.
@@ -180,13 +185,13 @@ namespace Isis {
         QString description;
         QString userName;
       };
-      typedef ControlNetHeaderV0002 ControlNetHeaderV0001;
-      typedef ControlNetHeaderV0003 ControlNetHeaderV0001;
-      typedef ControlNetHeaderV0004 ControlNetHeaderV0001;
-      typedef ControlNetHeaderV0005 ControlNetHeaderV0001;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0002;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0003;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0004;
+      typedef ControlNetHeaderV0001 ControlNetHeaderV0005;
 
-      typedef ControlPointV0004 ControlPointV0003;
-      typedef ControlPointV0005 ControlPointV0003;
+      typedef ControlPointV0003 ControlPointV0004;
+      typedef ControlPointV0003 ControlPointV0005;
 
       void read(const FileName netFile);
 
@@ -202,16 +207,16 @@ namespace Isis {
       void readProtobufV0002(const Pvl &header, const FileName netFile);
       void readProtobufV0005(const Pvl &header, const FileName netFile);
 
-      QSharedPointer<ControlPoint> createPoint(const ControlPointV0001 point);
-      QSharedPointer<ControlPoint> createPoint(const ControlPointV0002 point);
-      QSharedPointer<ControlPoint> createPoint(const ControlPointV0003 point);
+      QSharedPointer<ControlPoint> createPoint(ControlPointV0001 &point);
+      QSharedPointer<ControlPoint> createPoint(ControlPointV0002 &point);
+      QSharedPointer<ControlPoint> createPoint(ControlPointV0003 &point);
 
-      QSharedPointer<ControlMeasure> createMeasure(const ControlMeasureV0006 measure);
+      QSharedPointer<ControlMeasure> createMeasure(const ControlPointFileEntryV0002_Measure&);
 
-      void setHeader(const ControlNetHeaderV0001 header);
+      void createHeader(const ControlNetHeaderV0001 header);
 
-      void writeHeader(ZeroCopyOutputStream *fileStream);
-      void writeFirstPoint(ZeroCopyOutputStream *fileStream);
+      void writeHeader(google::protobuf::io::ZeroCopyOutputStream *fileStream);
+      int writeFirstPoint(google::protobuf::io::ZeroCopyOutputStream *fileStream);
 
       ControlNetHeaderV0005 m_header; /**< Header containing information about
                                            the whole network.*/

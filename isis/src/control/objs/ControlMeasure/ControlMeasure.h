@@ -152,13 +152,13 @@ namespace Isis {
    *                              does math on special pixels.
    *   @history 2011-04-11 Steven Lambright - Added GetLogValue for convenience
    *   @history 2011-07-05 Debbie A. Cook - Removed editLock checks from methods
-   *                              SetCamera, SetRejected, and SetResidual and 
+   *                              SetCamera, SetRejected, and SetResidual and
    *                              changed all other editLock tests to use
    *                              IsEditLocked method instead of the private
    *                              member, p_editLock, directly.  Also added
    *                              a check for an implicit lock if the measure is
    *                              the reference measure of the parent point in
-   *                              the IsEditLocked method.  
+   *                              the IsEditLocked method.
    *   @history 2011-07-29 Jai Rideout, Steven Lambright, and Eric Hyer - Made
    *                           this inherit from QObject to get destroyed()
    *                           signal
@@ -168,6 +168,8 @@ namespace Isis {
    *   @history 2012-08-11 Tracie Sucharski, Add computed and measured ephemeris time set to Null
    *                           in InitializeToNull.
    *   @history 2017-12-19 Adam Goins - Added "HasX()" accessors to ControlMeasure.
+   *   @history 2017-12-20 Jesse Mapel - Implemented GetLogDataEntries method for use in
+   *                           ControlNetVersioner refactor.
    */
   class ControlMeasure : public QObject {
 
@@ -306,21 +308,21 @@ namespace Isis {
       double GetSampleShift() const;
       double GetLineShift() const;
       double GetPixelShift() const;
-      
-      bool hasChooserName() const;
-      bool hasDateTime() const;
-      bool hasSample() const;
-      bool hasLine() const;
-      bool hasDiameter() const;
-      bool hasAprioriSample() const;
-      bool hasAprioriLine() const;
-      bool hasSampleSigma() const;
-      bool hasLineSigma() const;
-      bool hasSampleResidual() const;
-      bool hasLineResidual() const;
-      bool hasJigsawRejected() const;
-      bool jigsawRejected() const;
-      int logSize() const;
+
+      bool HasChooserName() const;
+      bool HasDateTime() const;
+      bool HasSample() const;
+      bool HasLine() const;
+      bool HasDiameter() const;
+      bool HasAprioriSample() const;
+      bool HasAprioriLine() const;
+      bool HasSampleSigma() const;
+      bool HasLineSigma() const;
+      bool HasSampleResidual() const;
+      bool HasLineResidual() const;
+      bool HasJigsawRejected() const;
+      bool JigsawRejected() const;
+      int LogSize() const;
 
       static QVector<QString> GetMeasureDataNames();
 
