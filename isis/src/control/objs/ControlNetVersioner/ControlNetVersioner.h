@@ -34,7 +34,6 @@
 #include "ControlPointV0002.h"
 #include "ControlPointV0003.h"
 
-
 class QString;
 
 namespace Isis {
@@ -43,6 +42,9 @@ namespace Isis {
   class Pvl;
   class PvlContainer;
   class PvlObject;
+  class ControlPointV0001;
+  class ControlPointV0002;
+  class ControlPointV0003;
 
   /**
    * @brief Handle Various Control Network Versions
@@ -148,9 +150,6 @@ namespace Isis {
    *                           information from the ControlPoint.
    */
   class ControlNetVersioner {
-    class ControlPointV0001;
-    class ControlPointV0002;
-    class ControlPointV0003;
 
     public:
       ControlNetVersioner(QSharedPointer<ControlNet> net);
@@ -167,7 +166,7 @@ namespace Isis {
       QSharedPointer<ControlPoint> takeFirstPoint();
 
       void write(FileName netFile);
-      Pvl &toPvl();
+      Pvl toPvl();
 
     private:
       // These three methods are private for safety reasons.
@@ -208,13 +207,13 @@ namespace Isis {
       void readProtobufV0002(const Pvl &header, const FileName netFile);
       void readProtobufV0005(const Pvl &header, const FileName netFile);
 
-      QSharedPointer<ControlPoint> createPoint(const ControlPointV0001 point);
-      QSharedPointer<ControlPoint> createPoint(const ControlPointV0002 point);
-      QSharedPointer<ControlPoint> createPoint(const ControlPointV0003 point);
+      QSharedPointer<ControlPoint> createPoint(ControlPointV0001 &point);
+      QSharedPointer<ControlPoint> createPoint(ControlPointV0002 &point);
+      QSharedPointer<ControlPoint> createPoint(ControlPointV0003 &point);
 
-      QSharedPointer<ControlMeasure> createMeasure(const ControlMeasureV0006 measure);
+      QSharedPointer<ControlMeasure> createMeasure(const ControlPointFileEntryV0002_Measure&);
 
-      void setHeader(const ControlNetHeaderV0001 header);
+      void createHeader(const ControlNetHeaderV0001 header);
 
       void writeHeader(google::protobuf::io::ZeroCopyOutputStream *fileStream);
       int writeFirstPoint(google::protobuf::io::ZeroCopyOutputStream *fileStream);
