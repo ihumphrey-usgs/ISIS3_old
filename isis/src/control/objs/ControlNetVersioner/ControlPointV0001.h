@@ -33,7 +33,7 @@ namespace Isis {
 
   class ControlPointV0001 {
     public:
-      ControlPointV0001(Pvl &pointObject, const QString targetName);
+      ControlPointV0001(PvlObject &pointObject, const QString targetName);
       ControlPointV0001(QSharedPointer<ControlNetFileProtoV0001_PBControlPoint> pointData);
 
       QSharedPointer<ControlNetFileProtoV0001_PBControlPoint> pointData();
