@@ -38,7 +38,7 @@ namespace Isis {
    * @param targetName The name of the taret used to get the body radii when converting from
    *                   lat/lon to x/y/z.
    */
-  ControlPointV0001::ControlPointV0001(Pvl &pointObject, const QString targetName)
+  ControlPointV0001::ControlPointV0001(PvlObject &pointObject, const QString targetName)
    : m_pointData(new ControlNetFileProtoV0001_PBControlPoint),
      m_logData(new ControlNetLogDataProtoV0001_Point) {
 
