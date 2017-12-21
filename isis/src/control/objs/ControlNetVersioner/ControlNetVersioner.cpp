@@ -857,7 +857,7 @@ namespace Isis {
 
     // Create the header
     try {
-      ControlNetHeaderV0001 header;
+      ControlNetHeaderV0002 header;
       header.networkID = protoNet.networkid().c_str();
       if (protoNet.has_targetname()) {
         header.targetName = protoNet.targetname().c_str();
@@ -880,8 +880,10 @@ namespace Isis {
     for (int i = 0; i < protoNet.points_size(); i++) {
       try {
         QSharedPointer<ControlNetFileProtoV0001_PBControlPoint>
-              protoPoint(protoNet.mutable_points(i));
-        ControlPointV0001 point(protoPoint);
+              protoPoint(new ControlNetFileProtoV0001_PBControlPoint(protoNet.points(i)));
+        QSharedPointer<ControlNetLogDataProtoV0001_Point>
+              protoPointLogData(new ControlNetLogDataProtoV0001_Point(protoLogData.points(i)));
+        ControlPointV0002 point(protoPoint, protoPointLogData);
         m_points.append( createPoint(point) );
       }
       catch (IException &e) {
@@ -890,8 +892,6 @@ namespace Isis {
         throw IException(e, IException::User, msg, _FILEINFO_);
       }
     }
-
-    // TODO how to parse the version 1 log data?
   }
 
 
