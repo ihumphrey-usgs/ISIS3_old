@@ -178,8 +178,8 @@ namespace Isis {
    */
   ControlPoint *ControlNetVersioner::takeFirstPoint() {
     ControlPoint *point = NULL;
-    if (!m_points.isEmpty) {
-      ControlPoint = m_points.takeFirst();
+    if ( !m_points.isEmpty() ) {
+      point = m_points.takeFirst();
     }
 
     return point;
@@ -302,15 +302,15 @@ namespace Isis {
         PvlKeyword aprioriY("AprioriY", toString(aprioriSurfacePoint.GetY().meters()), "meters");
         PvlKeyword aprioriZ("AprioriZ", toString(aprioriSurfacePoint.GetZ().meters()), "meters");
 
-        aprioriX.addComment("AprioriLatitude = " 
+        aprioriX.addComment("AprioriLatitude = "
                             + toString(aprioriSurfacePoint.GetLatitude().degrees())
                             + " <degrees>");
-        aprioriY.addComment("AprioriLongitude = " 
-                            + toString(aprioriSurfacePoint.GetLongitude().degrees()) 
+        aprioriY.addComment("AprioriLongitude = "
+                            + toString(aprioriSurfacePoint.GetLongitude().degrees())
                             + " <degrees>");
 
-        aprioriZ.addComment("AprioriRadius = " 
-                            + toString(aprioriSurfacePoint.GetLocalRadius().meters()) 
+        aprioriZ.addComment("AprioriRadius = "
+                            + toString(aprioriSurfacePoint.GetLocalRadius().meters())
                             + " <meters>");
 
         pvlPoint += aprioriX;
@@ -319,7 +319,7 @@ namespace Isis {
 
         // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
         symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
-        if (aprioriCovarianceMatrix.size() > 0) {
+        if (aprioriCovarianceMatrix.size1() > 0) {
           PvlKeyword matrix("AprioriCovarianceMatrix");
           matrix += toString(aprioriCovarianceMatrix(0, 0));
           matrix += toString(aprioriCovarianceMatrix(0, 1));
@@ -329,7 +329,7 @@ namespace Isis {
           matrix += toString(aprioriCovarianceMatrix(2, 2));
 
           if (pvlRadii.hasKeyword("EquatorialRadius")) {
-            QString sigmas = "AprioriLatitudeSigma = " 
+            QString sigmas = "AprioriLatitudeSigma = "
                              + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AprioriLongitudeSigma = "
                              + toString(aprioriSurfacePoint.GetLonSigmaDistance().meters())
@@ -361,7 +361,7 @@ namespace Isis {
         PvlKeyword adjustedY("AdjustedY", toString(adjustedSurfacePoint.GetY().meters()), "meters");
         PvlKeyword adjustedZ("AdjustedZ", toString(adjustedSurfacePoint.GetZ().meters()), "meters");
 
-        adjustedX.addComment("AdjustedLatitude = " 
+        adjustedX.addComment("AdjustedLatitude = "
                              + toString(adjustedSurfacePoint.GetLatitude().degrees())
                              + " <degrees>");
         adjustedY.addComment("AdjustedLongitude = "
@@ -376,7 +376,7 @@ namespace Isis {
         pvlPoint += adjustedZ;
 
         symmetric_matrix<double, upper> adjustedCovarianceMatrix = adjustedSurfacePoint.GetRectangularMatrix();
-        if (adjustedCovarianceMatrix.size() > 0) {
+        if (adjustedCovarianceMatrix.size1() > 0) {
           PvlKeyword matrix("AdjustedCovarianceMatrix");
           matrix += toString(adjustedCovarianceMatrix(0, 0));
           matrix += toString(adjustedCovarianceMatrix(0, 1));
@@ -386,12 +386,12 @@ namespace Isis {
           matrix += toString(adjustedCovarianceMatrix(2, 2));
 
           if (pvlRadii.hasKeyword("EquatorialRadius")) {
-            QString sigmas = "AdjustedLatitudeSigma = " +
-                             + toString(adjustedCovarianceMatrix.GetLatSigmaDistance().meters()
+            QString sigmas = "AdjustedLatitudeSigma = "
+                             + toString(adjustedSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AdjustedLongitudeSigma = "
-                             + toString(adjustedCovarianceMatrix.GetLonSigmaDistance().meters()
+                             + toString(adjustedSurfacePoint.GetLonSigmaDistance().meters())
                              + " <meters>  AdjustedRadiusSigma = "
-                             + toString(adjustedCovarianceMatrix.GetLocalRadiusSigma().meters()
+                             + toString(adjustedSurfacePoint.GetLocalRadiusSigma().meters())
                              + " <meters>";
             matrix.addComment(sigmas);
           }
@@ -1531,7 +1531,7 @@ namespace Isis {
 
       // Is there a better way we can get the total number of measures?
       int numMeasures = 0;
-      foreach (QSharedPointer<ControlPoint> point, m_points) {
+      foreach (ControlPoint *point, m_points) {
         numMeasures += point->GetNumMeasures();
       }
       netInfo += PvlKeyword("NumberOfMeasures", toString(numMeasures));
@@ -1691,7 +1691,7 @@ namespace Isis {
         protoPoint.set_aprioriz(aprioriSurfacePoint.GetZ().meters());
 
         symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
-        if (aprioriCovarianceMatrix.size() > 0) {
+        if (aprioriCovarianceMatrix.size1() > 0) {
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 0));
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 1));
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 2));
@@ -1715,7 +1715,7 @@ namespace Isis {
         protoPoint.set_adjustedz(adjustedSurfacePoint.GetZ().meters());
 
         symmetric_matrix<double, upper> adjustedCovarianceMatrix = adjustedSurfacePoint.GetRectangularMatrix();
-        if (adjustedCovarianceMatrix.size() > 0) {
+        if (adjustedCovarianceMatrix.size1() > 0) {
           protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 0));
           protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 1));
           protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 2));
@@ -1843,7 +1843,7 @@ namespace Isis {
       // Make sure that if the versioner owns the ControlPoint it is properly cleaned up.
       if (m_ownsPoints) {
         delete controlPoint;
-        controlPoint = NULL:
+        controlPoint = NULL;
       }
 
       // return size of message
