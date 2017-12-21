@@ -2464,7 +2464,9 @@ namespace Isis {
 
     return fileEntry;
   }
-  double ControlPoint::AprioriCovar(int position) const {
+
+  //! Returns the apriori covar value associated at the given position.
+  double ControlPoint::GetAprioriCovar(int position) const {
     SurfacePoint apriori = GetAprioriSurfacePoint();
     symmetric_matrix< double, upper > covar = apriori.GetRectangularMatrix();
     switch (position) {
@@ -2492,7 +2494,34 @@ namespace Isis {
     }
   }
 
-  double ControlPoint::AdjustedCovar(int position) const {
+  //! Returns true if there are apriori surface point covar values.
+  bool ControlPoint::HasAprioriCovar() const {
+    SurfacePoint apriori = GetAprioriSurfacePoint();
+    symmetric_matrix< double, upper > covar = apriori.GetRectangularMatrix();
+    // If there are values in any of the covar matrices.
+    if (covar(0, 0) != 0. || covar(0, 1) != 0. ||
+        covar(0, 2) != 0. || covar(1, 1) != 0. ||
+        covar(1, 2) != 0. || covar(2, 2) != 0.) {
+        return true;
+    }
+    return false;
+  }
+
+  //! Returns true if there are adjusted surface point covar values.
+  bool ControlPoint::HasAdjustedCovar() const {
+    SurfacePoint adjusted = GetAdjustedSurfacePoint();
+    symmetric_matrix< double, upper > covar = adjusted.GetRectangularMatrix();
+    // If there are values in any of the covar matrices.
+    if (covar(0, 0) != 0. || covar(0, 1) != 0. ||
+        covar(0, 2) != 0. || covar(1, 1) != 0. ||
+        covar(1, 2) != 0. || covar(2, 2) != 0.) {
+        return true;
+    }
+    return false;
+  }
+
+  //! Returns the adjusted covar value associated at the given position.
+  double ControlPoint::GetAdjustedCovar(int position) const {
     SurfacePoint adjusted = GetAdjustedSurfacePoint();
     symmetric_matrix< double, upper > covar = adjusted.GetRectangularMatrix();
     switch (position) {

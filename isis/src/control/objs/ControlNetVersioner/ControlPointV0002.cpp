@@ -28,7 +28,7 @@ namespace Isis {
    *
    * @param pointObject The control point and its measures in a Pvl object
    */
-  ControlPointV0002::ControlPointV0002(Pvl &pointObject)
+  ControlPointV0002::ControlPointV0002(PvlObject &pointObject)
    : m_pointData(new ControlNetFileProtoV0001_PBControlPoint) {
 
     // Copy over strings, doubles, and bools

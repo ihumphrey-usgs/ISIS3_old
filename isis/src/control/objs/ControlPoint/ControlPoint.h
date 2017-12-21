@@ -514,6 +514,8 @@ namespace Isis {
 
       bool HasAprioriCoordinates();
       bool HasAdjustedCoordinates();
+      bool HasAprioriCovar() const;
+      bool HasAdjustedCovar() const;
 
       bool IsConstrained();
       bool IsLatitudeConstrained();
@@ -578,8 +580,8 @@ namespace Isis {
       double GetSampleResidualRms() const;
       double GetLineResidualRms() const;
       double GetResidualRms() const;
-      double AprioriCovar(int) const;
-      double AdjustedCovar(int) const;
+      double GetAprioriCovar(int) const;
+      double GetAdjustedCovar(int) const;
       void ClearJigsawRejected();
 
       ControlPointFileEntryV0002 ToFileEntry() const;
