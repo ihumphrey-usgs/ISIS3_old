@@ -337,11 +337,12 @@ namespace Isis {
    *                           constructor (Merged by Kristin Berry. Fixes #2392)
    *   @history 2017-12-18 Kristin Berry - Added convenience methods:
    *                            HasAprioriSurfacePointSourceFile(), HasAprioriRadiusSourceFile(),
-   *                            GetAprioriX(), GetAprioriY(), GetAprioriZ(), HasAdjustedCoordinates(),
-   *                            GetAdjustedX(), GetAdjustedY(), GetAdjustedZ(), HasRefMeasure().
+   *                            GetAprioriX(), GetAprioriY(), GetAprioriZ(),
+   *                            HasAdjustedCoordinates(), GetAdjustedX(), GetAdjustedY(),
+   *                            GetAdjustedZ(), HasRefMeasure().
    *   @history 2017-12-19 Kristin Berry - Added IsJigsawRejected().
-   *   @history 2017-12-20 Adam Goins - Added AprioriCovar() and AdjustedCovar() accessors.
-   *   @history 2017-12-21 Adam Goins - Removed redundant code following ControlNetVersioner refactor.
+   *   @history 2017-12-21 Adam Goins - Removed redundant code following ControlNetVersioner
+   *                           refactor.
    */
   class ControlPoint : public QObject {
 
