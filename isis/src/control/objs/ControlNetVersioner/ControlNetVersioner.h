@@ -152,7 +152,7 @@ namespace Isis {
   class ControlNetVersioner {
 
     public:
-      ControlNetVersioner(QSharedPointer<ControlNet> net);
+      ControlNetVersioner(ControlNet *net);
       ControlNetVersioner(const FileName netFile);
       ~ControlNetVersioner();
 
@@ -163,7 +163,8 @@ namespace Isis {
       QString description() const;
       QString userName() const;
 
-      QSharedPointer<ControlPoint> takeFirstPoint();
+      int numPoints() const;
+      ControlPoint *takeFirstPoint();
 
       void write(FileName netFile);
       Pvl toPvl();
@@ -207,11 +208,11 @@ namespace Isis {
       void readProtobufV0002(const Pvl &header, const FileName netFile);
       void readProtobufV0005(const Pvl &header, const FileName netFile);
 
-      QSharedPointer<ControlPoint> createPoint(ControlPointV0001 &point);
-      QSharedPointer<ControlPoint> createPoint(ControlPointV0002 &point);
-      QSharedPointer<ControlPoint> createPoint(ControlPointV0003 &point);
+      ControlPoint *createPoint(ControlPointV0001 &point);
+      ControlPoint *createPoint(ControlPointV0002 &point);
+      ControlPoint *createPoint(ControlPointV0003 &point);
 
-      QSharedPointer<ControlMeasure> createMeasure(const ControlPointFileEntryV0002_Measure&);
+      ControlMeasure *createMeasure(const ControlPointFileEntryV0002_Measure&);
 
       void createHeader(const ControlNetHeaderV0001 header);
 
@@ -220,10 +221,12 @@ namespace Isis {
 
       ControlNetHeaderV0005 m_header; /**< Header containing information about
                                            the whole network.*/
-      QList< QSharedPointer<ControlPoint> > m_points; /**< ControlPoints that are
-                                                           read in from a file or
-                                                           ready to be written out
-                                                           to a file.*/
+      QList<ControlPoint *> m_points; /**< ControlPoints that are read in from a file or
+                                           ready to be written out to a file.*/
+      bool m_ownsPoints; /**< Flag if the versioner owns the control points stored in it.
+                             This will be true when the versioner created the points from a file.
+                             This will be false when the versioner copied the points from an
+                             esiting control network.*/
 
   };
 }

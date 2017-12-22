@@ -14,9 +14,6 @@
 
 #include "ControlMeasure.h"
 #include "ControlNet.h"
-#include "ControlNetFile.h"
-#include "ControlNetFileV0001.h"
-#include "ControlNetFileV0002.h"
 #include "ControlMeasureLogData.h"
 #include "Distance.h"
 #include "FileName.h"
@@ -45,10 +42,18 @@ using namespace std;
 
 namespace Isis {
 
-  ControlNetVersioner::ControlNetVersioner(QSharedPointer<ControlNet> net) {
+  /**
+   * Construct a ControlNetVersioner from a control network. This versioner can only be used to
+   * write out the control points in the control network. It is expected that the control points
+   * in the control network will not be deleted while the control net versioner persists.
+   *
+   * @param net A pointer to the network that will be written out.
+   */
+  ControlNetVersioner::ControlNetVersioner(ControlNet *net)
+   : m_ownsPoints(false) {
     // Populate the internal list of points.
     for (int i = 0; i < net->GetNumPoints(); i++) {
-        m_points.append( QSharedPointer<ControlPoint>( net->GetPoints().at(i) ) );
+        m_points.append( net->GetPoints().at(i) );
     }
 
 
@@ -64,13 +69,33 @@ namespace Isis {
   }
 
 
-  ControlNetVersioner::ControlNetVersioner(const FileName netFile) {
+  /**
+   * Construct a ControlNetVersioner from a file. The file will be read in and converted into
+   * a header object that contains general information about the network and a list of
+   * ControlPoints.
+   *
+   * @param netFile The control network file to read in.
+   *
+   * @see ControlNetVersioner::Read
+   */
+  ControlNetVersioner::ControlNetVersioner(const FileName netFile)
+   : m_ownsPoints(true) {
     read(netFile);
   }
 
 
+  /**
+   * Destroy a ControlNetVersioner. If the versioner owns the control points stored in it,
+   * they will also be deleted.
+   */
   ControlNetVersioner::~ControlNetVersioner() {
-
+    if (m_ownsPoints) {
+      while ( !m_points.isEmpty() ) {
+        ControlPoint *unusedPoint = m_points.takeFirst();
+        delete unusedPoint;
+        unusedPoint = NULL;
+      }
+    }
   }
 
 
@@ -134,12 +159,31 @@ namespace Isis {
   }
 
 
-  QSharedPointer<ControlPoint> ControlNetVersioner::takeFirstPoint() {
-    return m_points.takeFirst();
+  /**
+   * Returns the number of points that have been read in or are ready to write out.
+   *
+   * @return @b int The number of control points stored internally.
+   */
+  int ControlNetVersioner::numPoints() const {
+    return m_points.size();
   }
 
 
+  /**
+   * Returns the first point stored in the versioner's internal list. This method passes ownership
+   * of the point to the caller who is expected to delete it when done with it.
+   *
+   * @return @b ControlPoint* A pointer to the control point. The caller assumes ownership of the
+   *                          ControlPoint and is expected to delete it when done.
+   */
+  ControlPoint *ControlNetVersioner::takeFirstPoint() {
+    ControlPoint *point = NULL;
+    if ( !m_points.isEmpty() ) {
+      point = m_points.takeFirst();
+    }
 
+    return point;
+  }
 
 
   /**
@@ -176,8 +220,7 @@ namespace Isis {
       }
     }
 
-    ControlPoint controlPoint;
-    foreach(QSharedPointer<ControlPoint> controlPoint, m_points) {
+    foreach(ControlPoint *controlPoint, m_points) {
       PvlObject pvlPoint("ControlPoint");
 
       if (controlPoint->GetType() == ControlPoint::Fixed) {
@@ -259,15 +302,15 @@ namespace Isis {
         PvlKeyword aprioriY("AprioriY", toString(aprioriSurfacePoint.GetY().meters()), "meters");
         PvlKeyword aprioriZ("AprioriZ", toString(aprioriSurfacePoint.GetZ().meters()), "meters");
 
-        aprioriX.addComment("AprioriLatitude = " 
+        aprioriX.addComment("AprioriLatitude = "
                             + toString(aprioriSurfacePoint.GetLatitude().degrees())
                             + " <degrees>");
-        aprioriY.addComment("AprioriLongitude = " 
-                            + toString(aprioriSurfacePoint.GetLongitude().degrees()) 
+        aprioriY.addComment("AprioriLongitude = "
+                            + toString(aprioriSurfacePoint.GetLongitude().degrees())
                             + " <degrees>");
 
-        aprioriZ.addComment("AprioriRadius = " 
-                            + toString(aprioriSurfacePoint.GetLocalRadius().meters()) 
+        aprioriZ.addComment("AprioriRadius = "
+                            + toString(aprioriSurfacePoint.GetLocalRadius().meters())
                             + " <meters>");
 
         pvlPoint += aprioriX;
@@ -276,7 +319,7 @@ namespace Isis {
 
         // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
         symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
-        if (aprioriCovarianceMatrix.size() > 0) {
+        if (aprioriCovarianceMatrix.size1() > 0) {
           PvlKeyword matrix("AprioriCovarianceMatrix");
           matrix += toString(aprioriCovarianceMatrix(0, 0));
           matrix += toString(aprioriCovarianceMatrix(0, 1));
@@ -286,7 +329,7 @@ namespace Isis {
           matrix += toString(aprioriCovarianceMatrix(2, 2));
 
           if (pvlRadii.hasKeyword("EquatorialRadius")) {
-            QString sigmas = "AprioriLatitudeSigma = " 
+            QString sigmas = "AprioriLatitudeSigma = "
                              + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AprioriLongitudeSigma = "
                              + toString(aprioriSurfacePoint.GetLonSigmaDistance().meters())
@@ -318,7 +361,7 @@ namespace Isis {
         PvlKeyword adjustedY("AdjustedY", toString(adjustedSurfacePoint.GetY().meters()), "meters");
         PvlKeyword adjustedZ("AdjustedZ", toString(adjustedSurfacePoint.GetZ().meters()), "meters");
 
-        adjustedX.addComment("AdjustedLatitude = " 
+        adjustedX.addComment("AdjustedLatitude = "
                              + toString(adjustedSurfacePoint.GetLatitude().degrees())
                              + " <degrees>");
         adjustedY.addComment("AdjustedLongitude = "
@@ -333,7 +376,7 @@ namespace Isis {
         pvlPoint += adjustedZ;
 
         symmetric_matrix<double, upper> adjustedCovarianceMatrix = adjustedSurfacePoint.GetRectangularMatrix();
-        if (adjustedCovarianceMatrix.size() > 0) {
+        if (adjustedCovarianceMatrix.size1() > 0) {
           PvlKeyword matrix("AdjustedCovarianceMatrix");
           matrix += toString(adjustedCovarianceMatrix(0, 0));
           matrix += toString(adjustedCovarianceMatrix(0, 1));
@@ -343,12 +386,12 @@ namespace Isis {
           matrix += toString(adjustedCovarianceMatrix(2, 2));
 
           if (pvlRadii.hasKeyword("EquatorialRadius")) {
-            QString sigmas = "AdjustedLatitudeSigma = " +
-                             + toString(adjustedCovarianceMatrix.GetLatSigmaDistance().meters()
+            QString sigmas = "AdjustedLatitudeSigma = "
+                             + toString(adjustedSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AdjustedLongitudeSigma = "
-                             + toString(adjustedCovarianceMatrix.GetLonSigmaDistance().meters()
+                             + toString(adjustedSurfacePoint.GetLonSigmaDistance().meters())
                              + " <meters>  AdjustedRadiusSigma = "
-                             + toString(adjustedCovarianceMatrix.GetLocalRadiusSigma().meters()
+                             + toString(adjustedSurfacePoint.GetLocalRadiusSigma().meters())
                              + " <meters>";
             matrix.addComment(sigmas);
           }
@@ -1093,7 +1136,7 @@ namespace Isis {
    * @return The latest version ControlPoint constructed from the
    *         given point.
    */
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(ControlPointV0001 &point) {
+  ControlPoint *ControlNetVersioner::createPoint(ControlPointV0001 &point) {
 
     ControlPointV0002 newPoint(point);
     return createPoint(newPoint);
@@ -1113,7 +1156,7 @@ namespace Isis {
    * @return The latest version ControlPoint constructed from the
    *         given point.
    */
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(ControlPointV0002 &point) {
+  ControlPoint *ControlNetVersioner::createPoint(ControlPointV0002 &point) {
 
     ControlPointV0003 newPoint(point);
     return createPoint(newPoint);
@@ -1133,10 +1176,10 @@ namespace Isis {
    * @return The latest version ControlPoint constructed from the
    *         given point.
    */
-  QSharedPointer<ControlPoint> ControlNetVersioner::createPoint(ControlPointV0003 &point) {
+  ControlPoint *ControlNetVersioner::createPoint(ControlPointV0003 &point) {
 
     ControlPointFileEntryV0002 protoPoint = point.pointData();
-    QSharedPointer<ControlPoint> controlPoint;
+    ControlPoint *controlPoint = new ControlPoint;
 
     controlPoint->SetId(QString( protoPoint.id().c_str() ));
     controlPoint->SetChooserName(protoPoint.choosername().c_str());
@@ -1311,8 +1354,7 @@ namespace Isis {
 
     // adding measure information
     for (int m = 0 ; m < protoPoint.measures_size(); m++) {
-      QSharedPointer<ControlMeasure> measure = createMeasure(protoPoint.measures(m));
-      controlPoint->Add(measure.data());
+      controlPoint->Add( createMeasure( protoPoint.measures(m) ) );
     }
 
     if (protoPoint.has_referenceindex()) {
@@ -1336,8 +1378,8 @@ namespace Isis {
    * @return The ControlMeasure constructed from the V0006 version
    *         file.
    */
-  QSharedPointer<ControlMeasure> ControlNetVersioner::createMeasure(const ControlPointFileEntryV0002_Measure &measure) {
-    QSharedPointer<ControlMeasure> newMeasure(new ControlMeasure);
+  ControlMeasure *ControlNetVersioner::createMeasure(const ControlPointFileEntryV0002_Measure &measure) {
+    ControlMeasure *newMeasure = new ControlMeasure;
     newMeasure->SetCubeSerialNumber(QString(measure.serialnumber().c_str()));
     newMeasure->SetChooserName(QString(measure.choosername().c_str()));
     newMeasure->SetDateTime(QString(measure.datetime().c_str()));
@@ -1489,7 +1531,7 @@ namespace Isis {
 
       // Is there a better way we can get the total number of measures?
       int numMeasures = 0;
-      foreach (QSharedPointer<ControlPoint> point, m_points) {
+      foreach (ControlPoint *point, m_points) {
         numMeasures += point->GetNumMeasures();
       }
       netInfo += PvlKeyword("NumberOfMeasures", toString(numMeasures));
@@ -1515,7 +1557,7 @@ namespace Isis {
  /**
   * This will read the binary protobuffer control network header to a ZeroCopyOutputStream
   *
-  * @param fileStream
+  * @param fileStream The filestream that the header will be written to.
   */
   void ControlNetVersioner::writeHeader(ZeroCopyOutputStream *oStream) {
 
@@ -1539,16 +1581,20 @@ namespace Isis {
 
 
  /**
-  * This will write the first control control point to a ZeroCopyOutputStream
+  * This will write the first control control point to a ZeroCopyOutputStream.
+  * The written point will be removed from the versioner and deleted if the versioner
+  * has ownership of it.
   *
   * @param fileStream A pointer to the fileStream that we are writing the point to.
+  *
+  * @return @b int The number of bytes written to the filestream.
   */
   int ControlNetVersioner::writeFirstPoint(ZeroCopyOutputStream *oStream) {
 
       CodedOutputStream fileStream(oStream);
 
       ControlPointFileEntryV0002 protoPoint;
-      QSharedPointer<ControlPoint> controlPoint = m_points.takeFirst();
+      ControlPoint *controlPoint = m_points.takeFirst();
 
       protoPoint.set_id(controlPoint->GetId().toLatin1().data());
       protoPoint.set_choosername(controlPoint->GetChooserName().toLatin1().data());
@@ -1645,7 +1691,7 @@ namespace Isis {
         protoPoint.set_aprioriz(aprioriSurfacePoint.GetZ().meters());
 
         symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
-        if (aprioriCovarianceMatrix.size() > 0) {
+        if (aprioriCovarianceMatrix.size1() > 0) {
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 0));
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 1));
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 2));
@@ -1669,7 +1715,7 @@ namespace Isis {
         protoPoint.set_adjustedz(adjustedSurfacePoint.GetZ().meters());
 
         symmetric_matrix<double, upper> adjustedCovarianceMatrix = adjustedSurfacePoint.GetRectangularMatrix();
-        if (adjustedCovarianceMatrix.size() > 0) {
+        if (adjustedCovarianceMatrix.size1() > 0) {
           protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 0));
           protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 1));
           protoPoint.add_adjustedcovar(adjustedCovarianceMatrix(0, 2));
@@ -1794,682 +1840,13 @@ namespace Isis {
         throw IException(IException::Programmer, err, _FILEINFO_);
       }
 
+      // Make sure that if the versioner owns the ControlPoint it is properly cleaned up.
+      if (m_ownsPoints) {
+        delete controlPoint;
+        controlPoint = NULL;
+      }
+
       // return size of message
-      return (msgSize);
+      return ( fileStream.ByteCount() );
   }
-
-
-// ??? TODO
-// ~~~~~~~~~~~~~~~ BEGIN OLD CONTROLNETVERSIONER CODE ~~~~~~~~~~~~~~~
-#if 0
-
-  /**
-   * Read the control network from disk. This will always return the network in
-   *   its "latest version" binary form. Generally this will only be called by
-   *   ControlNet but a conversion from binary to pvl can make use out of this
-   *   also.
-   *
-   * @param networkFileName The filename of the cnet to be read
-   *
-   */
-  LatestControlNetFile *ControlNetVersioner::Read(const FileName &networkFileName) {
-
-    try {
-      Pvl network(networkFileName.expanded());
-
-      if (network.hasObject("ProtoBuffer")) {
-        return ReadBinaryNetwork(network, networkFileName);
-      }
-      else if (network.hasObject("ControlNetwork")) {
-        return ReadPvlNetwork(network);
-      }
-      else {
-        QString msg = "Could not determine the control network file type";
-        throw IException(IException::Io, msg, _FILEINFO_);
-      }
-    }
-    catch (IException &e) {
-      QString msg = "Reading the control network [" + networkFileName.name()
-          + "] failed";
-      throw IException(e, IException::Io, msg, _FILEINFO_);
-    }
-  }
-
-
-  /**
-   * This will write a control net file object to disk.
-   *
-   * @param file file The output filename that will be written to
-   * @param fileData The ControlNetFile representation to write
-   * @param pvl True if the output format should be Pvl, false if not
-   *
-   */
-  void ControlNetVersioner::Write(const FileName &file,
-      const LatestControlNetFile &fileData, bool pvl) {
-
-    if (pvl) {
-      fileData.toPvl().write(file.expanded());
-    }
-    else {
-      fileData.Write(file);
-    }
-  }
-
-
-  /**
-   * This interprets a Pvl network of any version. Since we already have the
-   *   Pvl in memory (we need it to figure out if it is a Pvl network) it
-   *   does not actually call Pvl::Read.
-
-    PvlObject &network = pvl.findObject("ControlNetwork");
-
-    if (!network.hasKeyword("Version"))
-      network += PvlKeyword("Version", "1");
-
-
-    PvlObject &network = pvl.findObject("ControlNetwork");
-
-    if (!network.hasKeyword("Version"))
-      network += PvlKeyword("Version", "1");
-
-    int version = toInt(network["Version"][0]);
-
-    PvlObject &network = pvl.findObject("ControlNetwork");
-
-    if (!network.hasKeyword("Version"))
-      network += PvlKeyword("Version", "1");
-
-    int version = toInt(network["Version"][0]);
-
-    while (version != LATEST_PVL_VERSION) {
-      int previousVersion = version;
-
-      switch (version) {
-        case 1:
-          ConvertVersion1ToVersion2(network);
-          break;
-
-        case 2:
-          ConvertVersion2ToVersion3(network);
-          break;
-
-        case 3:
-          ConvertVersion3ToVersion4(network);
-          break;
-
-        default:
-          QString msg = "The Pvl file version [" + QString(version) + "] is not"
-              " supported";
-          throw IException(IException::Unknown, msg, _FILEINFO_);
-      }
-
-      version = toInt(network["Version"][0]);
-
-      if (version == previousVersion) {
-        QString msg = "Cannot update from version [" + QString(version) + "] "
-            "to any other version";
-          throw IException(IException::Programmer, msg, _FILEINFO_);
-      }
-    }
-
-    return LatestPvlToBinary(network);
-
-    while (version != LATEST_PVL_VERSION) {
-      int previousVersion = version;
-
-      switch (version) {
-        case 1:
-          ConvertVersion1ToVersion2(network);
-          break;
-
-        case 2:
-          ConvertVersion2ToVersion3(network);
-          break;
-
-        case 3:
-          ConvertVersion3ToVersion4(network);
-          break;
-
-        default:
-          QString msg = "The Pvl file version [" + QString(version) + "] is not"
-              " supported";
-          throw IException(IException::Unknown, msg, _FILEINFO_);
-      }
-
-      version = toInt(network["Version"][0]);
-
-      if (version == previousVersion) {
-        QString msg = "Cannot update from version [" + QString(version) + "] "
-            "to any other version";
-          throw IException(IException::Programmer, msg, _FILEINFO_);
-      }
-    }
-
-    return LatestPvlToBinary(network);
-    int version = toInt(network["Version"][0]);
-
-    while (version != LATEST_PVL_VERSION) {
-      int previousVersion = version;
-
-      switch (version) {
-        case 1:
-          ConvertVersion1ToVersion2(network);
-          break;
-
-        case 2:
-          ConvertVersion2ToVersion3(network);
-          break;
-
-        case 3:
-          ConvertVersion3ToVersion4(network);
-          break;
-
-        default:
-          QString msg = "The Pvl file version [" + QString(version) + "] is not"
-              " supported";
-          throw IException(IException::Unknown, msg, _FILEINFO_);
-      }
-
-      version = toInt(network["Version"][0]);
-
-      if (version == previousVersion) {
-        QString msg = "Cannot update from version [" + QString(version) + "] "
-            "to any other version";
-          throw IException(IException::Programmer, msg, _FILEINFO_);
-      }
-    }
-
-    return LatestPvlToBinary(network);
-   *
-   * The update cycle is contained in this method. Old versions of Pvl will be
-   *   updated until they reach the latest version and then LatestPvlToBinary
-   *   will be called to convert it back to a LatestControlNetFile.
-   *
-   * To add a new version, you only need to add a case to the switch that
-   *   calls a method (ConvertVersionAToVersionB). No other code should be
-   *   necessary. ConvertVersionAToVersionB is expected to update the Pvl's
-   *   version number.
-   *
-   * @param pvl The pvl network obtained from Pvl::Read on the input filename
-   */
-  LatestControlNetFile *ControlNetVersioner::ReadPvlNetwork(Pvl pvl) {
-
-    PvlObject &network = pvl.findObject("ControlNetwork");
-
-    if (!network.hasKeyword("Version"))
-      network += PvlKeyword("Version", "1");
-
-    int version = toInt(network["Version"][0]);
-
-    while (version != LATEST_PVL_VERSION) {
-      int previousVersion = version;
-
-      switch (version) {
-        case 1:
-          ConvertVersion1ToVersion2(network);
-          break;
-
-        case 2:
-          ConvertVersion2ToVersion3(network);
-          break;
-
-        case 3:
-          ConvertVersion3ToVersion4(network);
-          break;
-
-        default:
-          QString msg = "The Pvl file version [" + QString(version) + "] is not"
-              " supported";
-          throw IException(IException::Unknown, msg, _FILEINFO_);
-      }
-
-      version = toInt(network["Version"][0]);
-
-      if (version == previousVersion) {
-        QString msg = "Cannot update from version [" + QString(version) + "] "
-            "to any other version";
-          throw IException(IException::Programmer, msg, _FILEINFO_);
-      }
-    }
-
-    return LatestPvlToBinary(network);
-  }
-
-
-  /**
-   * Convert a pvl (in the latest version) back to binary (LatestControlNetFile)
-   *
-   * This does exactly what you think it would do - it copies PvlKeywords into
-   *   protocol buffer objects. Helper methods copy(...) do most of the work.
-   *   Any unexpected keywords in the Pvl will cause an exception to be thrown.
-   *   Not enough keywords in the Pvl will cause an exception to be thrown.
-   *   The returned LatestControlNetFile is guaranteed to have all required
-   *   fields.
-   *
-   * @param network The input PVL Control Network to convert
-   */
-  LatestControlNetFile *ControlNetVersioner::LatestPvlToBinary(PvlObject &network) {
-
-    LatestControlNetFile *latest = new LatestControlNetFile;
-
-    ControlNetFileHeaderV0002 &header = latest->GetNetworkHeader();
-
-    header.set_networkid(network.findKeyword("NetworkId")[0].toLatin1().data());
-    header.set_targetname(network.findKeyword("TargetName")[0].toLatin1().data());
-    header.set_created(network.findKeyword("Created")[0].toLatin1().data());
-    header.set_lastmodified(network.findKeyword("LastModified")[0].toLatin1().data());
-    header.set_description(network.findKeyword("Description")[0].toLatin1().data());
-    header.set_username(network.findKeyword("UserName")[0].toLatin1().data());
-    header.add_pointmessagesizes(0); // Just to pass the "IsInitialized" test
-
-    if (!header.IsInitialized()) {
-      QString msg = "There is missing required information in the network "
-          "header";
-      throw IException(IException::Io, msg, _FILEINFO_);
-    }
-
-    QList<ControlPointFileEntryV0002> &points = latest->GetNetworkPoints();
-
-    for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
-
-      points.append(point);
-    }
-
-    return latest;
-  }
-
-
-  /**
-   * This method is designed to read any and all binary networks. Old versions
-   *   will be sent to ReadPvlNetwork.
-   *
-   * @param header The Pvl at the top of the binary file
-   * @param filename The file that contains the binary network
-   * @return In-memory representation of the network
-   */
-  LatestControlNetFile *ControlNetVersioner::ReadBinaryNetwork(const Pvl &header,
-                                                               const FileName &filename) {
-
-    // Find the binary cnet version by any means necessary
-    int version = 1;
-
-    const PvlObject &protoBuf = header.findObject("ProtoBuffer");
-    const PvlGroup &netInfo = protoBuf.findGroup("ControlNetworkInfo");
-
-    if (netInfo.hasKeyword("Version"))
-      version = toInt(netInfo["Version"][0]);
-
-    // Okay, let's instantiate the correct ControlNetFile for this version
-    ControlNetFile *cnetFile;
-    switch (version) {
-      case 1:
-        cnetFile = new ControlNetFileV0001;
-        break;
-
-      case 2:
-        cnetFile = new ControlNetFileV0002;
-        break;
-
-      default:
-        QString msg = "The binary file version [" + QString(version) + "] is "
-            "not supported";
-        throw IException(IException::Io, msg, _FILEINFO_);
-    }
-
-    // Now read and update as necessary
-    cnetFile->Read(header, filename);
-
-    if (version != LATEST_BINARY_VERSION) {
-      Pvl pvl(cnetFile->toPvl());
-
-      delete cnetFile;
-      cnetFile = NULL;
-
-      return ReadPvlNetwork(pvl);
-    }
-    else {
-      return (LatestControlNetFile *)cnetFile;
-    }
-  }
-
-
-  /**
-   * This converts pvl networks from their implied version 1 to version 2.
-   *
-   * We're trying to handle all cases of old keywords from over a very long
-   *   time in this method, and end up with a consistent set of keywords so
-   *   there is no more duplication or confusion about what will be in the Pvl.
-   *
-   * Future conversions will have similar operations in them but will probably
-   *   be smaller/less work.
-   *
-   * Modify in place to prevent unnecessary memory usage.
-   *
-   * Version 2 is the first version made inside this versioner. It is the
-   *   first time keyword names and values cannot vary.
-   *
-   * @param network Input is Version 1, must be modified to conform to Version 2
-   */
-  void ControlNetVersioner::ConvertVersion1ToVersion2(PvlObject &network) {
-
-    network["Version"] = "2";
-
-    // Really... Projection::TargetRadii should be making this call
-    NaifStatus::CheckErrors();
-
-    if (QString(network["TargetName"]).startsWith("MRO/")) {
-      network["TargetName"] = "Mars";
-    }
-
-    PvlGroup radii;
-    try {
-      radii = Target::radiiGroup(network["TargetName"][0]);
-    }
-    catch (IException &e) {
-      try {
-        NaifStatus::CheckErrors();
-      }
-      catch (IException &) {
-      }
-
-      QString msg = "Unable to get convert ControlNet Version 1 to Version 2.";
-      throw IException(e, IException::Io, msg, _FILEINFO_);
-    }
-
-    Distance equatorialRadius(radii["EquatorialRadius"], Distance::Meters);
-    Distance polarRadius(radii["PolarRadius"], Distance::Meters);
-
-    for (int cpIndex = 0; cpIndex < network.objects(); cpIndex ++) {
-      PvlObject &cp = network.object(cpIndex);
-
-      if (newPoint.container.hasKeyword("Held") && newPoint.container["Held"][0] == "True")
-        newPoint.container["PointType"] = "Ground";
-
-      if (newPoint.container.hasKeyword("AprioriLatLonSource"))
-        newPoint.container["AprioriLatLonSource"].setName("AprioriXYZSource");
-
-      if (newPoint.container.hasKeyword("AprioriLatLonSourceFile"))
-        newPoint.container["AprioriLatLonSourceFile"].setName("AprioriXYZSourceFile");
-
-      if (newPoint.container.hasKeyword("AprioriLatitude")) {
-        SurfacePoint apriori(
-            Latitude(toDouble(newPoint.container["AprioriLatitude"][0]), Angle::Degrees),
-            Longitude(toDouble(newPoint.container["AprioriLongitude"][0]), Angle::Degrees),
-            Distance(toDouble(newPoint.container["AprioriRadius"][0]), Distance::Meters));
-
-        newPoint.container += PvlKeyword("AprioriX", toString(apriori.GetX().meters()), "meters");
-        newPoint.container += PvlKeyword("AprioriY", toString(apriori.GetY().meters()), "meters");
-        newPoint.container += PvlKeyword("AprioriZ", toString(apriori.GetZ().meters()), "meters");
-      }
-
-      if (newPoint.container.hasKeyword("Latitude")) {
-        SurfacePoint adjusted(
-            Latitude(toDouble(newPoint.container["Latitude"][0]), Angle::Degrees),
-            Longitude(toDouble(newPoint.container["Longitude"][0]), Angle::Degrees),
-            Distance(toDouble(newPoint.container["Radius"][0]), Distance::Meters));
-
-        newPoint.container += PvlKeyword("AdjustedX", toString(adjusted.GetX().meters()), "meters");
-        newPoint.container += PvlKeyword("AdjustedY", toString(adjusted.GetY().meters()), "meters");
-        newPoint.container += PvlKeyword("AdjustedZ", toString(adjusted.GetZ().meters()), "meters");
-
-        if (!newPoint.container.hasKeyword("AprioriLatitude")) {
-          newPoint.container += PvlKeyword("AprioriX", toString(adjusted.GetX().meters()), "meters");
-          newPoint.container += PvlKeyword("AprioriY", toString(adjusted.GetY().meters()), "meters");
-          newPoint.container += PvlKeyword("AprioriZ", toString(adjusted.GetZ().meters()), "meters");
-        }
-      }
-
-      if (newPoint.container.hasKeyword("X"))
-        newPoint.container["X"].setName("AdjustedX");
-
-      if (newPoint.container.hasKeyword("Y"))
-        newPoint.container["Y"].setName("AdjustedY");
-
-      if (newPoint.container.hasKeyword("Z"))
-        newPoint.container["Z"].setName("AdjustedZ");
-
-      if (newPoint.container.hasKeyword("AprioriSigmaLatitude") ||
-         newPoint.container.hasKeyword("AprioriSigmaLongitude") ||
-         newPoint.container.hasKeyword("AprioriSigmaRadius")) {
-        double sigmaLat = 10000.0;
-        double sigmaLon = 10000.0;
-        double sigmaRad = 10000.0;
-
-        if (newPoint.container.hasKeyword("AprioriSigmaLatitude")) {
-          if (toDouble(newPoint.container["AprioriSigmaLatitude"][0]) > 0 &&
-              toDouble(newPoint.container["AprioriSigmaLatitude"][0]) < sigmaLat)
-            sigmaLat = newPoint.container["AprioriSigmaLatitude"];
-
-          newPoint.container += PvlKeyword("LatitudeConstrained", "True");
-        }
-
-        if (newPoint.container.hasKeyword("AprioriSigmaLongitude")) {
-          if (toDouble(newPoint.container["AprioriSigmaLongitude"][0]) > 0 &&
-              toDouble(newPoint.container["AprioriSigmaLongitude"][0]) < sigmaLon)
-            sigmaLon = newPoint.container["AprioriSigmaLongitude"];
-
-          newPoint.container += PvlKeyword("LongitudeConstrained", "True");
-        }
-
-        if (newPoint.container.hasKeyword("AprioriSigmaRadius")) {
-          if (toDouble(newPoint.container["AprioriSigmaRadius"][0]) > 0 &&
-              toDouble(newPoint.container["AprioriSigmaRadius"][0]) < sigmaRad)
-            sigmaRad = newPoint.container["AprioriSigmaRadius"];
-
-          newPoint.container += PvlKeyword("RadiusConstrained", "True");
-        }
-
-        SurfacePoint tmp;
-        tmp.SetRadii(equatorialRadius, equatorialRadius, polarRadius);
-        tmp.SetRectangular(
-            Displacement(newPoint.container["AprioriX"], Displacement::Meters),
-            Displacement(newPoint.container["AprioriY"], Displacement::Meters),
-            Displacement(newPoint.container["AprioriZ"], Displacement::Meters));
-        tmp.SetSphericalSigmasDistance(
-          Distance(sigmaLat, Distance::Meters),
-          Distance(sigmaLon, Distance::Meters),
-          Distance(sigmaRad, Distance::Meters));
-
-        PvlKeyword aprioriCovarMatrix("AprioriCovarianceMatrix");
-        aprioriCovarMatrix += toString(tmp.GetRectangularMatrix()(0, 0));
-        aprioriCovarMatrix += toString(tmp.GetRectangularMatrix()(0, 1));
-        aprioriCovarMatrix += toString(tmp.GetRectangularMatrix()(0, 2));
-        aprioriCovarMatrix += toString(tmp.GetRectangularMatrix()(1, 1));
-        aprioriCovarMatrix += toString(tmp.GetRectangularMatrix()(1, 2));
-        aprioriCovarMatrix += toString(tmp.GetRectangularMatrix()(2, 2));
-
-        newPoint.container += aprioriCovarMatrix;
-      }
-
-      if (newPoint.container.hasKeyword("AdjustedSigmaLatitude") ||
-          newPoint.container.hasKeyword("AdjustedSigmaLongitude") ||
-          newPoint.container.hasKeyword("AdjustedSigmaRadius")) {
-        double sigmaLat = 10000.0;
-        double sigmaLon = 10000.0;
-        double sigmaRad = 10000.0;
-
-        if (newPoint.container.hasKeyword("AdjustedSigmaLatitude")) {
-          if (toDouble(newPoint.container["AdjustedSigmaLatitude"][0]) > 0 &&
-              toDouble(newPoint.container["AdjustedSigmaLatitude"][0]) < sigmaLat)
-            sigmaLat = newPoint.container["AdjustedSigmaLatitude"];
-        }
-
-        if (newPoint.container.hasKeyword("AdjustedSigmaLongitude")) {
-          if (toDouble(newPoint.container["AdjustedSigmaLongitude"][0]) > 0 &&
-              toDouble(newPoint.container["AdjustedSigmaLongitude"][0]) < sigmaLon)
-            sigmaLon = newPoint.container["AdjustedSigmaLongitude"];
-        }
-
-        if (newPoint.container.hasKeyword("AdjustedSigmaRadius")) {
-          if (toDouble(newPoint.container["AdjustedSigmaRadius"][0]) > 0 &&
-              toDouble(newPoint.container["AdjustedSigmaRadius"][0]) < sigmaRad)
-            sigmaRad = newPoint.container["AdjustedSigmaRadius"];
-        }
-
-        SurfacePoint tmp;
-        tmp.SetRadii(equatorialRadius, equatorialRadius, polarRadius);
-        tmp.SetRectangular(Displacement(newPoint.container["AdjustedX"], Displacement::Meters),
-                           Displacement(newPoint.container["AdjustedY"], Displacement::Meters),
-                           Displacement(newPoint.container["AdjustedZ"], Displacement::Meters));
-        tmp.SetSphericalSigmasDistance(Distance(sigmaLat, Distance::Meters),
-                                       Distance(sigmaLon, Distance::Meters),
-                                       Distance(sigmaRad, Distance::Meters));
-
-        PvlKeyword adjustedCovarMatrix("AdjustedCovarianceMatrix");
-        adjustedCovarMatrix += toString(tmp.GetRectangularMatrix()(0, 0));
-        adjustedCovarMatrix += toString(tmp.GetRectangularMatrix()(0, 1));
-        adjustedCovarMatrix += toString(tmp.GetRectangularMatrix()(0, 2));
-        adjustedCovarMatrix += toString(tmp.GetRectangularMatrix()(1, 1));
-        adjustedCovarMatrix += toString(tmp.GetRectangularMatrix()(1, 2));
-        adjustedCovarMatrix += toString(tmp.GetRectangularMatrix()(2, 2));
-
-        newPoint.container += adjustedCovarMatrix;
-      }
-
-      if (newPoint.container.hasKeyword("ApostCovarianceMatrix"))
-        newPoint.container["ApostCovarianceMatrix"].setName("AdjustedCovarianceMatrix");
-
-      if (!newPoint.container.hasKeyword("LatitudeConstrained")) {
-        if (newPoint.container.hasKeyword("AprioriCovarianceMatrix"))
-          newPoint.container += PvlKeyword("LatitudeConstrained", "True");
-        else
-          newPoint.container += PvlKeyword("LatitudeConstrained", "False");
-      }
-
-      if (!newPoint.container.hasKeyword("LongitudeConstrained")) {
-        if (newPoint.container.hasKeyword("AprioriCovarianceMatrix"))
-          newPoint.container += PvlKeyword("LongitudeConstrained", "True");
-        else
-          newPoint.container += PvlKeyword("LongitudeConstrained", "False");
-      }
-
-      if (!newPoint.container.hasKeyword("RadiusConstrained")) {
-        if (newPoint.container.hasKeyword("AprioriCovarianceMatrix"))
-          newPoint.container += PvlKeyword("RadiusConstrained", "True");
-        else
-          newPoint.container += PvlKeyword("RadiusConstrained", "False");
-      }
-
-      // Delete anything that has no value...
-      for (int cpKeyIndex = 0; cpKeyIndex < newPoint.container.keywords(); cpKeyIndex ++) {
-        if (newPoint.container[cpKeyIndex][0] == "") {
-          newPoint.container.deleteKeyword(cpKeyIndex);
-        }
-      }
-
-      for (int cmIndex = 0; cmIndex < newPoint.container.groups(); cmIndex ++) {
-        PvlGroup &cm = newPoint.container.group(cmIndex);
-
-        // Estimated => Candidate
-        if (cm.hasKeyword("MeasureType")) {
-          QString type = cm["MeasureType"][0].toLower();
-
-          if (type == "estimated" || type == "unmeasured") {
-            if (type == "unmeasured") {
-              bool hasSampleLine = false;
-
-              try {
-                toDouble(cm["Sample"][0]);
-                toDouble(cm["Line"][0]);
-                hasSampleLine = true;
-              }
-              catch (...) {
-              }
-
-              if (!hasSampleLine) {
-                cm.addKeyword(PvlKeyword("Sample", "0.0"), PvlContainer::Replace);
-                cm.addKeyword(PvlKeyword("Line", "0.0"), PvlContainer::Replace);
-                cm.addKeyword(PvlKeyword("Ignore", toString(true)), PvlContainer::Replace);
-              }
-            }
-
-            cm["MeasureType"] = "Candidate";
-          }
-          else if (type == "automatic" ||
-                   type == "validatedmanual" ||
-                   type == "automaticpixel") {
-            cm["MeasureType"] = "RegisteredPixel";
-          }
-          else if (type == "validatedautomatic" || type == "automaticsubpixel") {
-            cm["MeasureType"] = "RegisteredSubPixel";
-          }
-        }
-
-        if (cm.hasKeyword("ErrorSample"))
-          cm["ErrorSample"].setName("SampleResidual");
-
-        if (cm.hasKeyword("ErrorLine"))
-          cm["ErrorLine"].setName("LineResidual");
-
-        // Delete some extraneous values we once printed
-        if (cm.hasKeyword("SampleResidual") &&
-            toDouble(cm["SampleResidual"][0]) == 0.0)
-          cm.deleteKeyword("SampleResidual");
-
-        if (cm.hasKeyword("LineResidual") &&
-            toDouble(cm["LineResidual"][0]) == 0.0)
-          cm.deleteKeyword("LineResidual");
-
-        if (cm.hasKeyword("Diameter") &&
-            toDouble(cm["Diameter"][0]) == 0.0)
-          cm.deleteKeyword("Diameter");
-
-        if (cm.hasKeyword("ErrorMagnitude"))
-          cm.deleteKeyword("ErrorMagnitude");
-
-        if (cm.hasKeyword("ZScore"))
-          cm.deleteKeyword("ZScore");
-
-        // Delete anything that has no value...
-        for (int cmKeyIndex = 0; cmKeyIndex < cm.keywords(); cmKeyIndex ++) {
-          if (cm[cmKeyIndex][0] == "") {
-            cm.deleteKeyword(cmKeyIndex);
-          }
-        }
-      }
-    }
-  }
-
-
-  /**
-   * This converts pvl networks from their version 2 to version 3.
-   *
-   * Modify in place to prevent unnecessary memory usage.
-   *
-   * @param network Input is Version 2, must be modified to conform to Version 3
-   */
-  void ControlNetVersioner::ConvertVersion2ToVersion3(PvlObject &network) {
-
-    network["Version"] = "3";
-
-    for (int cpIndex = 0; cpIndex < network.objects(); cpIndex ++) {
-      PvlObject &cp = network.object(cpIndex);
-
-     if (newPoint.container.hasKeyword("AprioriCovarianceMatrix") ||
-         newPoint.container.hasKeyword("AdjustedCovarianceMatrix"))
-       newPoint.container["PointType"] = "Constrained";
-    }
-  }
-
-
-  /**
-   * This converts pvl networks from their version 3 to version 4.
-   *
-   * Modify in place to prevent unnecessary memory usage.
-   *
-   * @param network Input is Version 3, must be modified to conform to Version 4
-   */
-  void ControlNetVersioner::ConvertVersion3ToVersion4(PvlObject &network) {
-
-    network["Version"] = "4";
-
-    for (int cpIndex = 0; cpIndex < network.objects(); cpIndex ++) {
-      PvlObject &cp = network.object(cpIndex);
-
-     if (newPoint.container["PointType"][0] == "Ground") newPoint.container["PointType"] = "Fixed";
-     if (newPoint.container["PointType"][0] == "Tie") newPoint.container["PointType"] = "Free";
-    }
-  }
-
-#endif
 }

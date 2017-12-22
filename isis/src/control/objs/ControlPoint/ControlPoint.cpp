@@ -17,7 +17,6 @@
 #include "ControlMeasure.h"
 #include "ControlMeasureLogData.h"
 #include "ControlNet.h"
-#include "ControlNetFile.h"
 #include "Cube.h"
 #include "IString.h"
 #include "Latitude.h"
@@ -2118,7 +2117,7 @@ namespace Isis {
     SetRejected(false);
   }
 
-  
+
   //! Returns the apriori covar value associated at the given position.
   double ControlPoint::GetAprioriCovar(int position) const {
     SurfacePoint apriori = GetAprioriSurfacePoint();
