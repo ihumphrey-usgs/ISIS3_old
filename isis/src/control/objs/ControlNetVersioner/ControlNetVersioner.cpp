@@ -57,7 +57,6 @@ namespace Isis {
         m_points.append( net->GetPoints().at(i) );
     }
 
-
     ControlNetHeaderV0001 header;
 
     header.networkID = net->GetNetworkId();
@@ -300,7 +299,6 @@ namespace Isis {
           break;
       }
 
-
       if ( controlPoint->HasAprioriRadiusSourceFile() ) {
         pvlPoint += PvlKeyword("AprioriRadiusSourceFile",
                         controlPoint->GetAprioriRadiusSourceFile());
@@ -494,7 +492,7 @@ namespace Isis {
 
 #if 0
         for (int logEntry = 0;
-            logEntry < controlMeasure.LogSize(); // DNE?
+            logEntry < controlMeasure.GetLogDataEntries().size();
             logEntry ++) {
           const ControlMeasureLogData &log =
                 controlMeasure.GetLogData(logEntry); // Not sure this is right.
@@ -524,6 +522,7 @@ namespace Isis {
    */
   void ControlNetVersioner::read(const FileName netFile) {
     try {
+
       const Pvl &network(netFile.expanded());
 
       if ( network.hasObject("ProtoBuffer") ) {
@@ -564,19 +563,15 @@ namespace Isis {
       case 1:
         readPvlV0001(controlNetwork);
         break;
-
       case 2:
         readPvlV0002(controlNetwork);
         break;
-
       case 3:
         readPvlV0003(controlNetwork);
         break;
-
       case 4:
         readPvlV0004(controlNetwork);
         break;
-
       case 5:
         readPvlV0005(controlNetwork);
         break;
@@ -615,8 +610,10 @@ namespace Isis {
     // initialize the control points
     for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
       try {
+
         PvlObject pointObject = network.object(objectIndex);
         ControlPointV0001 point(pointObject, header.targetName);
+
         m_points.append( createPoint(point) );
       }
       catch (IException &e) {
@@ -801,15 +798,12 @@ namespace Isis {
       case 1:
         readProtobufV0001(header, netFile);
         break;
-
       case 2:
         readProtobufV0002(header, netFile);
         break;
-
       case 5:
         readProtobufV0005(header, netFile);
         break;
-
       default:
         QString msg = "The Protobuf file version [" + toString(version)
                       + "] is not supported";
@@ -1051,22 +1045,27 @@ namespace Isis {
     }
 
     input.seekg(headerStartPos, ios::beg);
+
     streampos filePos = input.tellg();
 
     ControlNetFileHeaderV0005 protoHeader;
     try {
       IstreamInputStream headerInStream(&input);
       CodedInputStream headerCodedInStream(&headerInStream);
+
       // max 512MB, warn at 400MB
       headerCodedInStream.SetTotalBytesLimit(1024 * 1024 * 512,
                                              1024 * 1024 * 400);
       CodedInputStream::Limit oldLimit = headerCodedInStream.PushLimit(headerLength);
+
       if ( !protoHeader.ParseFromCodedStream(&headerCodedInStream) ) {
         QString msg = "Failed to parse protobuf header from input control net file ["
                       + netFile.name() + "]";
         throw IException(IException::Io, msg, _FILEINFO_);
       }
+
       headerCodedInStream.PopLimit(oldLimit);
+
       filePos += headerLength;
     }
     catch (...) {
@@ -1152,10 +1151,8 @@ namespace Isis {
    *         given point.
    */
   ControlPoint *ControlNetVersioner::createPoint(ControlPointV0001 &point) {
-
     ControlPointV0002 newPoint(point);
     return createPoint(newPoint);
-
   }
 
 
@@ -1192,7 +1189,6 @@ namespace Isis {
    *         given point.
    */
   ControlPoint *ControlNetVersioner::createPoint(ControlPointV0003 &point) {
-
     ControlPointFileEntryV0002 protoPoint = point.pointData();
     ControlPoint *controlPoint = new ControlPoint;
 
@@ -1392,6 +1388,7 @@ namespace Isis {
     if ( protoPoint.has_editlock() ) {
       controlPoint->SetEditLock(protoPoint.editlock());
     }
+
     return controlPoint;
 
   }
@@ -1453,23 +1450,18 @@ namespace Isis {
     if ( measure.has_line() ) {
       newMeasure->SetCoordinate(measure.sample(), measure.line());
     }
-
     if ( measure.has_diameter() ) {
       newMeasure->SetDiameter(measure.diameter());
     }
-
     if ( measure.has_apriorisample() ) {
       newMeasure->SetAprioriSample(measure.apriorisample());
     }
-
     if ( measure.has_aprioriline() ) {
       newMeasure->SetAprioriLine(measure.aprioriline());
     }
-
     if ( measure.has_samplesigma() ) {
       newMeasure->SetSampleSigma(measure.samplesigma());
     }
-
     if ( measure.has_linesigma() ) {
       newMeasure->SetLineSigma(measure.linesigma());
     }
@@ -1479,14 +1471,14 @@ namespace Isis {
     }
 
     for (int i = 0; i < measure.log_size(); i++) {
+
       const ControlPointFileEntryV0002_Measure_MeasureLogData &protoLog = measure.log(i);
       ControlMeasureLogData logEntry;
-
-      if ( protoLog.has_doubledatavalue() ) {
-        logEntry.SetNumericalValue( protoLog.doubledatavalue() );
-      }
       if ( protoLog.has_doubledatatype() ) {
         logEntry.SetDataType((ControlMeasureLogData::NumericLogDataType)protoLog.doubledatatype());
+      }
+      if ( protoLog.has_doubledatavalue() ) {
+        logEntry.SetNumericalValue( protoLog.doubledatavalue() );
       }
       newMeasure->SetLogData(logEntry);
     }
@@ -1595,7 +1587,7 @@ namespace Isis {
       output.close();
 
       delete fileStream;
-
+      fileStream = NULL;
     }
     catch (...) {
       QString msg = "Can't write control net file";
@@ -1614,13 +1606,13 @@ namespace Isis {
 
     // Create the protobuf header using our struct
     ControlNetFileHeaderV0005 protobufHeader;
+
     protobufHeader.set_networkid(m_header.networkID.toLatin1().data());
     protobufHeader.set_targetname(m_header.targetName.toLatin1().data());
     protobufHeader.set_created(m_header.created.toLatin1().data());
     protobufHeader.set_lastmodified(m_header.lastModified.toLatin1().data());
     protobufHeader.set_description(m_header.description.toLatin1().data());
     protobufHeader.set_username(m_header.userName.toLatin1().data());
-
     // Write out the header
     if ( !protobufHeader.SerializeToCodedStream(&fileStream) ) {
       QString msg = "Failed to write output control network file.";
