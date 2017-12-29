@@ -125,7 +125,7 @@ namespace Isis {
 
 
       ControlMeasureLogData();
-      //  ControlMeasureLogData(NumericLogDataType);
+      ControlMeasureLogData(NumericLogDataType);
       ControlMeasureLogData(PvlKeyword);
       ControlMeasureLogData(NumericLogDataType, double value);
       ControlMeasureLogData(const ControlMeasureLogData & other);
