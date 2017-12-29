@@ -489,9 +489,10 @@ namespace Isis {
         }
 
         if ( controlMeasure.IsRejected() ) {
-          pvlMeasure += PvlKeyword("JigsawRejected", toString(controlMeasure.JigsawRejected()));
+          pvlMeasure += PvlKeyword("JigsawRejected", toString(controlMeasure.IsRejected()));
         }
 
+#if 0
         for (int logEntry = 0;
             logEntry < controlMeasure.LogSize(); // DNE?
             logEntry ++) {
@@ -501,6 +502,7 @@ namespace Isis {
           ControlMeasureLogData interpreter(log);
           pvlMeasure += interpreter.ToKeyword();
         }
+#endif
 
         if ( controlPoint->HasRefMeasure() &&
            controlPoint->IndexOfRefMeasure() == j ) {
