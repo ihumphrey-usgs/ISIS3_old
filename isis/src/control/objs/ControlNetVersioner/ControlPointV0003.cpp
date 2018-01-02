@@ -267,7 +267,7 @@ namespace Isis {
    * @param oldPoint The PvlControlPointV0002 that will be upgraded to V0003.
    */
   ControlPointV0003::ControlPointV0003(ControlPointV0002 &oldPoint)
-   : m_pointData(new ControlPointFileEntryV0002) {
+      : m_pointData(new ControlPointFileEntryV0002) {
     QSharedPointer<ControlNetFileProtoV0001_PBControlPoint> oldPointData = oldPoint.pointData();
     if (!oldPointData) {
       QString msg = "Version 2 control point is missing point data.";
@@ -513,11 +513,15 @@ namespace Isis {
         // Copy over any log data
         ControlNetLogDataProtoV0001_Point_Measure measureLogData = oldLogData->measures(i);
         for (int j = 0; j < measureLogData.loggedmeasuredata_size(); j++) {
-          ControlNetLogDataProtoV0001_Point_Measure_DataEntry oldData =
-                measureLogData.loggedmeasuredata(j);
+
+          ControlNetLogDataProtoV0001_Point_Measure_DataEntry oldData = 
+              measureLogData.loggedmeasuredata(j);
+
           ControlPointFileEntryV0002_Measure_MeasureLogData newData;
+
           newData.set_doubledatatype( oldData.datatype() );
           newData.set_doubledatavalue( oldData.datavalue() );
+
           *newMeasure->add_log() = newData;
         }
 

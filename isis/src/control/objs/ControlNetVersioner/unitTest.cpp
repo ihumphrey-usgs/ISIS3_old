@@ -1,7 +1,6 @@
 #include "ControlNetVersioner.h"
 
-#include <string>
-
+#include <QDebug>
 #include <QString>
 #include <QTime>
 
@@ -19,23 +18,23 @@ void TestNetwork(const QString &filename, bool printNetwork = true, bool pvlInpu
 
 int main(int argc, char *argv[]) {
   Preference::Preferences(true);
-  cerr << "Test ControlNetVersioner" << endl;
-  TestNetwork("./reallyOldNetwork.net"); // No target
-  TestNetwork("./reallyOldNetwork2.net"); // Really odd keywords with target
-  TestNetwork("./oldNetwork.net"); // Another set of odd keywords
-  TestNetwork("./oldNetwork2.net"); // Binary V1
-  TestNetwork("./badNetwork.net"); // Corrupted (based off of oldNetwork2.net)
-  TestNetwork("./semilarge.net", false);
-  TestNetwork("./smallPvlTest.pvl", true, true); // network with rejected jigsaw points
+  qDebug() << "Test ControlNetVersioner";
+  TestNetwork("$control/unitTest_ControlNetVersioner_reallyOldNetwork.net"); // No target
+  TestNetwork("$control/unitTest_ControlNetVersioner_reallyOldNetwork2.net"); // Really odd keywords with target
+  TestNetwork("$control/unitTest_ControlNetVersioner_oldNetwork.net"); // Another set of odd keywords
+  TestNetwork("$control/unitTest_ControlNetVersioner_oldNetwork2.net"); // Binary V1
+  TestNetwork("$control/unitTest_ControlNetVersioner_badNetwork.net"); // Corrupted (based off of oldNetwork2.net)
+  TestNetwork("$control/unitTest_ControlNetVersioner_semilarge.net", false);
+  TestNetwork("$control/unitTest_ControlNetVersioner_smallPvlTest.pvl", true, true); // network with rejected jigsaw points
 }
 
 void TestNetwork(const QString &filename, bool printNetwork, bool pvlInput) {
-  cerr << "Reading: " << filename << "...\n\n";
+  qDebug() << "Reading: " << filename << "...\n\n";
   FileName networkFileName(filename);
 
-  LatestControlNetFile * test = NULL;
-  LatestControlNetFile * test2 = NULL;
-  
+  ControlNetVersioner* test;
+  ControlNetVersioner* test2;
+
   try {
 
     // If we're reading in a Pvl file, this will call the Pvl update cycle, then
@@ -44,55 +43,55 @@ void TestNetwork(const QString &filename, bool printNetwork, bool pvlInput) {
     //   convert to Pvl, then update, then convert to binary, and back to pvl.
     //   The reason for the intermediate Pvl is described in
     //   ControlNetVersioner.h.
-    cerr << "Read network..." << endl;
-    test = ControlNetVersioner::Read(networkFileName);
+    qDebug() << "Read network...";
+    test = new ControlNetVersioner(networkFileName);
 
     if(printNetwork) {
-      cerr << "Converted directly to Pvl:" << endl;
+      qDebug() << "Converted directly to Pvl:";
       Pvl pvlVersion(test->toPvl());
-      cerr << pvlVersion << endl;
+      // qDebug() does not support this operation on a pvl
+      // qDebug() << pvlVersion;
       pvlVersion.write("./tmp.pvl");
     }
 
     // Test the latest binary read/write and Pvl conversion
-    cerr << "Write the network and re-read it..." << endl;
-    ControlNetVersioner::Write(FileName("./tmp"), *test);
-          
+    qDebug() << "Write the network and re-read it...";
+    test->write( FileName("./tmp") );
+
     try {
-      test2 = ControlNetVersioner::Read(FileName("./tmp"));
+      test2 = new ControlNetVersioner( FileName("./tmp") );
     }
     catch(IException &e) {
       remove("./tmp");
       throw;
     }
 
-    cerr << "After reading and writing to a binary form does Pvl match?"
-         << endl;
+    qDebug() << "After reading and writing to a binary form does Pvl match?";
+
     if(printNetwork) {
       Pvl pvlVersion2(test2->toPvl());
       pvlVersion2.write("./tmp2.pvl");
       if(system("cmp ./tmp.pvl ./tmp2.pvl")) {
-        cerr << "Reading/Writing results in Pvl differences!" << endl;
+        qDebug() << "Reading/Writing results in Pvl differences!";
       }
       else {
-        cerr << "Conversion to Pvl stays consistent" << endl;
+        qDebug() << "Conversion to Pvl stays consistent";
       }
     }
 
-    ControlNetVersioner::Write(FileName("./tmp2"), *test2);
+    test2->write(FileName("./tmp2"));
     if(system("cmp ./tmp ./tmp2")) {
-      cerr << "Reading/Writing control network results in binary differences!"
-           << endl;
+      qDebug() << "Reading/Writing control network results in binary differences!";
     }
     else {
-      cerr << "Reading/Writing control network is consistent" << endl;
+      qDebug() << "Reading/Writing control network is consistent";
     }
 
     if (pvlInput) {
 
-      LatestControlNetFile * cNet2 = NULL;
-      
-      cerr << "Check conversions between the binary format and the pvl format." << endl;
+      ControlNetVersioner * cNet2 = NULL;
+
+      qDebug() << "Check conversions between the binary format and the pvl format.";
       /*
        * When the input is a pvl, ./tmp is the binary form of the initial input. (pvl1->bin1)
        * Furthermore, ./tmp.pvl is the first binary conversion reverted back to pvl.
@@ -101,7 +100,7 @@ void TestNetwork(const QString &filename, bool printNetwork, bool pvlInput) {
        *
        *                                  a       b       c
        *                            (pvl1 -> bin1 -> pvl2 -> bin2)
-       * 
+       *
        * if (pvl1 != pvl2)
        *        a or b is broken but we don't know which yet
        *        if(bin1 != bin2)
@@ -112,26 +111,26 @@ void TestNetwork(const QString &filename, bool printNetwork, bool pvlInput) {
        * else
        *        The conversions are up to date and correct because neither a nor b broke.
        *
-       * 
+       *
        */
-      cNet2 = ControlNetVersioner::Read(FileName("./tmp.pvl"));
+      cNet2 = new ControlNetVersioner(FileName("./tmp.pvl"));
 
-      ControlNetVersioner::Write(FileName("./tmpCNet2"), *cNet2);
+      cNet2->write( FileName("./tmpCNet2") );
 
       //if there are differences between the pvls.
       QString cmd = "diff -EbB --suppress-common-lines " + filename + " ./tmp.pvl";
       if(system(cmd.toStdString().c_str())) {
-        
+
         //if the binary files are different.
         if(system("diff -EbB --suppress-common-lines ./tmp ./tmpCNet2")){
-          cerr << "The conversion from binary to pvl is incorrect." << endl;
+          qDebug() << "The conversion from binary to pvl is incorrect.";
         }
         else {
-          cerr << "The conversion from pvl to binary is incorrect." << endl;
+          qDebug() << "The conversion from pvl to binary is incorrect.";
         }
       }
       else {
-        cerr << "The conversion methods for pvl->bin and bin->pvl are correct." << endl;
+        qDebug() << "The conversion methods for pvl->bin and bin->pvl are correct.";
       }
 
       remove("./tmpCNet2");
@@ -150,7 +149,7 @@ void TestNetwork(const QString &filename, bool printNetwork, bool pvlInput) {
   catch(IException &e) {
     QStringList errors = e.toString().split("\n");
     errors.removeLast();
-    cerr << errors.join("\n") << endl;
+    qDebug() << errors.join("\n");
   }
 
   if(test) {
@@ -163,6 +162,5 @@ void TestNetwork(const QString &filename, bool printNetwork, bool pvlInput) {
     test2 = NULL;
   }
 
-  cerr << endl;
+  qDebug();
 }
-

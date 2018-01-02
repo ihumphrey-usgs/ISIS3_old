@@ -436,8 +436,8 @@ namespace Isis {
    */
   void ControlMeasure::SetLogData(ControlMeasureLogData data) {
     if (!data.IsValid()) {
-      IString msg = "Cannot set log data with invalid information stored in "
-          "the ControlMeasureLogData";
+      QString msg = "Cannot set log data with invalid information stored in "
+                    "the ControlMeasureLogData";
       throw IException(IException::Programmer, msg, _FILEINFO_);
     }
 
@@ -516,10 +516,10 @@ namespace Isis {
     }
 
     if (!updated) {
-      IString msg = "Unable to update the log data for [" +
-          newLogData.DataTypeToName(newLogData.GetDataType()) + "] because this"
-          " control measure does not have log data for this value. Please use "
-          "SetLogData instead";
+      QString msg = "Unable to update the log data for ["
+                    + newLogData.DataTypeToName(newLogData.GetDataType()) + "] because this"
+                    " control measure does not have log data for this value. Please use "
+                    "SetLogData instead";
       throw IException(IException::Programmer, msg, _FILEINFO_);
     }
   }
@@ -670,8 +670,8 @@ namespace Isis {
     }
 
     if (!validField) {
-      IString msg = "Cannot test IsStatisticallyRelevant on Measure Data ["
-          + IString(field) + "]";
+      QString msg = "Cannot test IsStatisticallyRelevant on Measure Data ["
+                    + QString(field) + "]";
       throw IException(IException::Programmer, msg, _FILEINFO_);
     }
 
@@ -734,7 +734,7 @@ namespace Isis {
 
   QString ControlMeasure::GetPointId() const {
     if (parentPoint == NULL) {
-      IString msg = "Measure has no containing point";
+      QString msg = "Measure has no containing point";
       throw IException(IException::User, msg, _FILEINFO_);
     }
 
@@ -796,20 +796,26 @@ namespace Isis {
 
   //! One Getter to rule them all
   double ControlMeasure::GetMeasureData(QString data) const {
-    if (data == "SampleResidual")
+    if (data == "SampleResidual") {
       return p_sampleResidual;
-    else if (data == "LineResidual")
+    }
+    else if (data == "LineResidual") {
       return p_lineResidual;
-    else if (data == "Type")
+    }
+    else if (data == "Type") {
       return p_measureType;
-    else if (data == "IsMeasured")
+    }
+    else if (data == "IsMeasured") {
       return IsMeasured();
-    else if (data == "IsRegistered")
+    }
+    else if (data == "IsRegistered") {
       return IsRegistered();
-    else if (data == "Ignore")
+    }
+    else if (data == "Ignore") {
       return p_ignore;
+    }
     else {
-      IString msg = data + " passed to GetMeasureData but is invalid";
+      QString msg = data + " passed to GetMeasureData but is invalid";
       throw IException(IException::Programmer, msg, _FILEINFO_);
     }
   }
@@ -904,8 +910,7 @@ namespace Isis {
    */
   ControlMeasure::MeasureType ControlMeasure::StringToMeasureType(QString str) {
 
-    IString err = "String [";
-    err += IString(str) + "] can not be converted to a MeasureType";
+    QString err = "String [" + str + "] can not be converted to a MeasureType";
 
     str = str.toLower();
     MeasureType measureType;

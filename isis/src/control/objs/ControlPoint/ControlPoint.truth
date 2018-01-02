@@ -8,7 +8,7 @@ Object = ControlNetwork
   Created      = Yesterday
   LastModified = Yesterday
   Description  = Null
-  Version      = 3
+  Version      = 5
 
   Object = ControlPoint
     PointType                = Fixed
@@ -78,7 +78,7 @@ Object = ControlNetwork
   Created      = Yesterday
   LastModified = Yesterday
   Description  = Null
-  Version      = 3
+  Version      = 5
 
   Object = ControlPoint
     PointType                = Fixed
@@ -167,7 +167,7 @@ Object = ControlNetwork
   Created      = Yesterday
   LastModified = Yesterday
   Description  = Null
-  Version      = 3
+  Version      = 5
 
   Object = ControlPoint
     PointType                = Fixed
@@ -253,7 +253,7 @@ Object = ControlNetwork
   Created      = Yesterday
   LastModified = Yesterday
   Description  = Null
-  Version      = 3
+  Version      = 5
 
   Object = ControlPoint
     PointType                = Fixed
@@ -338,7 +338,7 @@ Object = ControlNetwork
   Created      = Yesterday
   LastModified = Yesterday
   Description  = Null
-  Version      = 3
+  Version      = 5
 
   Object = ControlPoint
     PointType                = Fixed
