@@ -1850,10 +1850,6 @@ namespace Isis {
           protoMeasure.set_jigsawrejected(true);
         }
 
-        // Always set
-        protoMeasure.set_sample(controlMeasure.GetSample());
-        protoMeasure.set_line(controlMeasure.GetLine());
-
         if ( controlMeasure.GetSample() != 0.0 ) {
           protoMeasure.set_sample(controlMeasure.GetSample());
         }

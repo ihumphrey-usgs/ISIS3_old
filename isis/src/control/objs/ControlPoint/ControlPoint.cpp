@@ -2097,4 +2097,5 @@ namespace Isis {
 
     SetRejected(false);
   }
+
 }
