@@ -328,7 +328,7 @@ void printPoint(Isis::ControlPoint &p) {
   net.SetModifiedDate("Yesterday");
   net.Write("./tmp.net", true);
   Pvl tmp("./tmp.net");
-  qDebug() << "Printing point:\n" << tmp << "\nDone printing point.";
+  cout << "Printing point:\n" << tmp << "\nDone printing point.";
   qDebug() << "";
   remove("./tmp.net");
 }
