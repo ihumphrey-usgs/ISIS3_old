@@ -60,8 +60,7 @@ namespace Isis {
    *
    * @param other The instance to copy into this one.
    */
-  ControlMeasureLogData::ControlMeasureLogData(const ControlMeasureLogData&
-      other) {
+  ControlMeasureLogData::ControlMeasureLogData(const ControlMeasureLogData &other) {
     p_dataType = other.p_dataType;
     p_numericalValue = other.p_numericalValue;
   }

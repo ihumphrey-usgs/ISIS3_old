@@ -490,6 +490,7 @@ namespace Isis {
           pvlMeasure += PvlKeyword("JigsawRejected", toString(controlMeasure.IsRejected()));
         }
 
+#if 0
         for (int logEntry = 0;
             logEntry < controlMeasure.GetLogDataEntries().size();
             logEntry ++) {
@@ -499,6 +500,7 @@ namespace Isis {
           ControlMeasureLogData interpreter(log);
           pvlMeasure += interpreter.ToKeyword();
         }
+#endif
 
         if ( controlPoint->HasRefMeasure() &&
            controlPoint->IndexOfRefMeasure() == j &&
