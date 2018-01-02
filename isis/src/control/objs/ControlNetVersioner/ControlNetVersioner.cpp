@@ -11,7 +11,6 @@
 #include "ControlNetLogDataProtoV0001.pb.h"
 #include "ControlPointFileEntryV0002.pb.h"
 
-
 #include "ControlMeasure.h"
 #include "ControlNet.h"
 #include "ControlMeasureLogData.h"
@@ -56,7 +55,6 @@ namespace Isis {
     for (int i = 0; i < net->GetNumPoints(); i++) {
         m_points.append( net->GetPoints().at(i) );
     }
-
 
     ControlNetHeaderV0001 header;
 
@@ -300,7 +298,6 @@ namespace Isis {
           break;
       }
 
-
       if ( controlPoint->HasAprioriRadiusSourceFile() ) {
         pvlPoint += PvlKeyword("AprioriRadiusSourceFile",
                         controlPoint->GetAprioriRadiusSourceFile());
@@ -339,7 +336,12 @@ namespace Isis {
           matrix += toString(aprioriCovarianceMatrix(1, 2));
           matrix += toString(aprioriCovarianceMatrix(2, 2));
 
-          if ( pvlRadii.hasKeyword("EquatorialRadius") ) {
+          if ( pvlRadii.hasKeyword("EquatorialRadius")
+               && pvlRadii.hasKeyword("PolarRadius") ) {
+            aprioriSurfacePoint.SetRadii(
+                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
+                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
+                  Distance(pvlRadii["PolarRadius"],Distance::Meters));
             QString sigmas = "AprioriLatitudeSigma = "
                              + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AprioriLongitudeSigma = "
@@ -396,7 +398,12 @@ namespace Isis {
           matrix += toString(adjustedCovarianceMatrix(1, 2));
           matrix += toString(adjustedCovarianceMatrix(2, 2));
 
-          if ( pvlRadii.hasKeyword("EquatorialRadius") ) {
+          if ( pvlRadii.hasKeyword("EquatorialRadius")
+               && pvlRadii.hasKeyword("PolarRadius") ) {
+            adjustedSurfacePoint.SetRadii(
+                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
+                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
+                  Distance(pvlRadii["PolarRadius"],Distance::Meters));
             QString sigmas = "AdjustedLatitudeSigma = "
                              + toString(adjustedSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AdjustedLongitudeSigma = "
@@ -489,21 +496,16 @@ namespace Isis {
         }
 
         if ( controlMeasure.IsRejected() ) {
-          pvlMeasure += PvlKeyword("JigsawRejected", toString(controlMeasure.JigsawRejected()));
+          pvlMeasure += PvlKeyword("JigsawRejected", toString(controlMeasure.IsRejected()));
         }
 
-        for (int logEntry = 0;
-            logEntry < controlMeasure.LogSize(); // DNE?
-            logEntry ++) {
-          const ControlMeasureLogData &log =
-                controlMeasure.GetLogData(logEntry); // Not sure this is right.
-
-          ControlMeasureLogData interpreter(log);
-          pvlMeasure += interpreter.ToKeyword();
+        foreach (ControlMeasureLogData log, controlMeasure.GetLogDataEntries()) {
+          pvlMeasure += log.ToKeyword();
         }
 
         if ( controlPoint->HasRefMeasure() &&
-           controlPoint->IndexOfRefMeasure() == j ) {
+           controlPoint->IndexOfRefMeasure() == j &&
+           controlPoint->IsReferenceExplicit() ) {
           pvlMeasure += PvlKeyword("Reference", "True");
         }
         pvlPoint.addGroup(pvlMeasure);
@@ -522,6 +524,7 @@ namespace Isis {
    */
   void ControlNetVersioner::read(const FileName netFile) {
     try {
+
       const Pvl &network(netFile.expanded());
 
       if ( network.hasObject("ProtoBuffer") ) {
@@ -562,23 +565,18 @@ namespace Isis {
       case 1:
         readPvlV0001(controlNetwork);
         break;
-
       case 2:
         readPvlV0002(controlNetwork);
         break;
-
       case 3:
         readPvlV0003(controlNetwork);
         break;
-
       case 4:
         readPvlV0004(controlNetwork);
         break;
-
       case 5:
         readPvlV0005(controlNetwork);
         break;
-
       default:
         QString msg = "The Pvl file version [" + toString(version)
                       + "] is not supported";
@@ -613,8 +611,10 @@ namespace Isis {
     // initialize the control points
     for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
       try {
+
         PvlObject pointObject = network.object(objectIndex);
         ControlPointV0001 point(pointObject, header.targetName);
+
         m_points.append( createPoint(point) );
       }
       catch (IException &e) {
@@ -799,15 +799,12 @@ namespace Isis {
       case 1:
         readProtobufV0001(header, netFile);
         break;
-
       case 2:
         readProtobufV0002(header, netFile);
         break;
-
       case 5:
         readProtobufV0005(header, netFile);
         break;
-
       default:
         QString msg = "The Protobuf file version [" + toString(version)
                       + "] is not supported";
@@ -1000,13 +997,13 @@ namespace Isis {
       QSharedPointer<ControlPointFileEntryV0002> newPoint(new ControlPointFileEntryV0002);
 
       try {
-        CodedInputStream* pointCodedInStream = new CodedInputStream(&pointInStream);
-        pointCodedInStream->SetTotalBytesLimit(1024 * 1024 * 512,
+        CodedInputStream pointCodedInStream(&pointInStream);
+        pointCodedInStream.SetTotalBytesLimit(1024 * 1024 * 512,
                                               1024 * 1024 * 400);
         int pointSize = protoHeader.pointmessagesizes(pointIndex);
-        CodedInputStream::Limit oldPointLimit = pointCodedInStream->PushLimit(pointSize);
-        newPoint->ParseFromCodedStream(pointCodedInStream);
-        pointCodedInStream->PopLimit(oldPointLimit);
+        CodedInputStream::Limit oldPointLimit = pointCodedInStream.PushLimit(pointSize);
+        newPoint->ParseFromCodedStream(&pointCodedInStream);
+        pointCodedInStream.PopLimit(oldPointLimit);
       }
       catch (...) {
         QString msg = "Failed to read protobuf version 2 control point at index ["
@@ -1049,29 +1046,35 @@ namespace Isis {
     }
 
     input.seekg(headerStartPos, ios::beg);
+
     streampos filePos = input.tellg();
 
     ControlNetFileHeaderV0005 protoHeader;
     try {
+
       IstreamInputStream headerInStream(&input);
       CodedInputStream headerCodedInStream(&headerInStream);
+
       // max 512MB, warn at 400MB
       headerCodedInStream.SetTotalBytesLimit(1024 * 1024 * 512,
                                              1024 * 1024 * 400);
+
       CodedInputStream::Limit oldLimit = headerCodedInStream.PushLimit(headerLength);
+
       if ( !protoHeader.ParseFromCodedStream(&headerCodedInStream) ) {
         QString msg = "Failed to parse protobuf header from input control net file ["
                       + netFile.name() + "]";
         throw IException(IException::Io, msg, _FILEINFO_);
       }
+
       headerCodedInStream.PopLimit(oldLimit);
+
       filePos += headerLength;
     }
     catch (...) {
       QString msg = "An error occured while reading the protobuf control network header.";
       throw IException(IException::Io, msg, _FILEINFO_);
     }
-
     // initialize the header from the protobuf header
     try {
       ControlNetHeaderV0005 header;
@@ -1103,20 +1106,20 @@ namespace Isis {
     int pointIndex = -1;
     while (pointInStream.ByteCount() < pointsLength) {
       pointIndex += 1;
-      QSharedPointer<ControlPointFileEntryV0002> newPoint;
+      QSharedPointer<ControlPointFileEntryV0002> newPoint(new ControlPointFileEntryV0002);
 
       try {
-        CodedInputStream* pointCodedInStream = new CodedInputStream(&pointInStream);
-        pointCodedInStream->SetTotalBytesLimit(1024 * 1024 * 512,
+        CodedInputStream pointCodedInStream(&pointInStream);
+        pointCodedInStream.SetTotalBytesLimit(1024 * 1024 * 512,
                                               1024 * 1024 * 400);
         uint32_t size;
-        if ( !pointCodedInStream->ReadVarint32(&size) ) {
+        if ( !pointCodedInStream.ReadVarint32(&size) ) {
           // If we can't read another size, then assume at eof
           break;
         }
-        CodedInputStream::Limit oldPointLimit = pointCodedInStream->PushLimit(size);
-        newPoint->ParseFromCodedStream(pointCodedInStream);
-        pointCodedInStream->PopLimit(oldPointLimit);
+        CodedInputStream::Limit oldPointLimit = pointCodedInStream.PushLimit(size);
+        newPoint->ParseFromCodedStream(&pointCodedInStream);
+        pointCodedInStream.PopLimit(oldPointLimit);
       }
       catch (...) {
         QString msg = "Failed to read protobuf version 2 control point at index ["
@@ -1150,10 +1153,8 @@ namespace Isis {
    *         given point.
    */
   ControlPoint *ControlNetVersioner::createPoint(ControlPointV0001 &point) {
-
     ControlPointV0002 newPoint(point);
     return createPoint(newPoint);
-
   }
 
 
@@ -1190,7 +1191,6 @@ namespace Isis {
    *         given point.
    */
   ControlPoint *ControlNetVersioner::createPoint(ControlPointV0003 &point) {
-
     ControlPointFileEntryV0002 protoPoint = point.pointData();
     ControlPoint *controlPoint = new ControlPoint;
 
@@ -1390,6 +1390,7 @@ namespace Isis {
     if ( protoPoint.has_editlock() ) {
       controlPoint->SetEditLock(protoPoint.editlock());
     }
+
     return controlPoint;
 
   }
@@ -1451,23 +1452,18 @@ namespace Isis {
     if ( measure.has_line() ) {
       newMeasure->SetCoordinate(measure.sample(), measure.line());
     }
-
     if ( measure.has_diameter() ) {
       newMeasure->SetDiameter(measure.diameter());
     }
-
     if ( measure.has_apriorisample() ) {
       newMeasure->SetAprioriSample(measure.apriorisample());
     }
-
     if ( measure.has_aprioriline() ) {
       newMeasure->SetAprioriLine(measure.aprioriline());
     }
-
     if ( measure.has_samplesigma() ) {
       newMeasure->SetSampleSigma(measure.samplesigma());
     }
-
     if ( measure.has_linesigma() ) {
       newMeasure->SetLineSigma(measure.linesigma());
     }
@@ -1477,14 +1473,14 @@ namespace Isis {
     }
 
     for (int i = 0; i < measure.log_size(); i++) {
+
       const ControlPointFileEntryV0002_Measure_MeasureLogData &protoLog = measure.log(i);
       ControlMeasureLogData logEntry;
-
-      if ( protoLog.has_doubledatavalue() ) {
-        logEntry.SetNumericalValue( protoLog.doubledatavalue() );
-      }
       if ( protoLog.has_doubledatatype() ) {
         logEntry.SetDataType((ControlMeasureLogData::NumericLogDataType)protoLog.doubledatatype());
+      }
+      if ( protoLog.has_doubledatavalue() ) {
+        logEntry.SetNumericalValue( protoLog.doubledatavalue() );
       }
       newMeasure->SetLogData(logEntry);
     }
@@ -1525,19 +1521,25 @@ namespace Isis {
       output.write(blankLabel, labelBytes);
       delete [] blankLabel;
 
-      streampos startCoreHeaderPos = output.tellp();
+      // Is there a better way we can get the total number of measures?
+      int numMeasures = 0;
+      int numPoints = 0;
+      foreach (ControlPoint *point, m_points) {
+        numMeasures += point->GetNumMeasures();
+        numPoints += 1;
+      }
 
-      OstreamOutputStream* fileStream = new OstreamOutputStream(&output);
+      streampos startCoreHeaderPos = output.tellp();
+      OstreamOutputStream *fileStream = new OstreamOutputStream(&output);
 
       writeHeader(fileStream);
 
       BigInt pointByteTotal = 0;
       while ( !m_points.isEmpty() ) {
-        pointByteTotal += writeFirstPoint(fileStream);
+         pointByteTotal += writeFirstPoint(fileStream);
       }
 
       // Insert header at the beginning of the file once writing is done.
-
       ControlNetFileHeaderV0005 protobufHeader;
 
       protobufHeader.set_networkid(m_header.networkID.toLatin1().data());
@@ -1574,13 +1576,8 @@ namespace Isis {
       netInfo += PvlKeyword("Created", protobufHeader.created().c_str());
       netInfo += PvlKeyword("LastModified", protobufHeader.lastmodified().c_str());
       netInfo += PvlKeyword("Description", protobufHeader.description().c_str());
-      netInfo += PvlKeyword("NumberOfPoints", toString(m_points.size()));
+      netInfo += PvlKeyword("NumberOfPoints", toString(numPoints));
 
-      // Is there a better way we can get the total number of measures?
-      int numMeasures = 0;
-      foreach (ControlPoint *point, m_points) {
-        numMeasures += point->GetNumMeasures();
-      }
       netInfo += PvlKeyword("NumberOfMeasures", toString(numMeasures));
       netInfo += PvlKeyword("Version", "5");
       protoObj.addGroup(netInfo);
@@ -1593,7 +1590,7 @@ namespace Isis {
       output.close();
 
       delete fileStream;
-
+      fileStream = NULL;
     }
     catch (...) {
       QString msg = "Can't write control net file";
@@ -1612,6 +1609,7 @@ namespace Isis {
 
     // Create the protobuf header using our struct
     ControlNetFileHeaderV0005 protobufHeader;
+
     protobufHeader.set_networkid(m_header.networkID.toLatin1().data());
     protobufHeader.set_targetname(m_header.targetName.toLatin1().data());
     protobufHeader.set_created(m_header.created.toLatin1().data());
@@ -1624,6 +1622,7 @@ namespace Isis {
       QString msg = "Failed to write output control network file.";
       throw IException(IException::Io, msg, _FILEINFO_);
     }
+
   }
 
 
