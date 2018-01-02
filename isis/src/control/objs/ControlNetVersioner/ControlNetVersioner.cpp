@@ -11,7 +11,6 @@
 #include "ControlNetLogDataProtoV0001.pb.h"
 #include "ControlPointFileEntryV0002.pb.h"
 
-
 #include "ControlMeasure.h"
 #include "ControlNet.h"
 #include "ControlMeasureLogData.h"
@@ -574,7 +573,6 @@ namespace Isis {
       case 5:
         readPvlV0005(controlNetwork);
         break;
-
       default:
         QString msg = "The Pvl file version [" + toString(version)
                       + "] is not supported";
@@ -995,13 +993,13 @@ namespace Isis {
       QSharedPointer<ControlPointFileEntryV0002> newPoint(new ControlPointFileEntryV0002);
 
       try {
-        CodedInputStream* pointCodedInStream = new CodedInputStream(&pointInStream);
-        pointCodedInStream->SetTotalBytesLimit(1024 * 1024 * 512,
+        CodedInputStream pointCodedInStream(&pointInStream);
+        pointCodedInStream.SetTotalBytesLimit(1024 * 1024 * 512,
                                               1024 * 1024 * 400);
         int pointSize = protoHeader.pointmessagesizes(pointIndex);
-        CodedInputStream::Limit oldPointLimit = pointCodedInStream->PushLimit(pointSize);
-        newPoint->ParseFromCodedStream(pointCodedInStream);
-        pointCodedInStream->PopLimit(oldPointLimit);
+        CodedInputStream::Limit oldPointLimit = pointCodedInStream.PushLimit(pointSize);
+        newPoint->ParseFromCodedStream(&pointCodedInStream);
+        pointCodedInStream.PopLimit(oldPointLimit);
       }
       catch (...) {
         QString msg = "Failed to read protobuf version 2 control point at index ["
@@ -1049,12 +1047,14 @@ namespace Isis {
 
     ControlNetFileHeaderV0005 protoHeader;
     try {
+
       IstreamInputStream headerInStream(&input);
       CodedInputStream headerCodedInStream(&headerInStream);
 
       // max 512MB, warn at 400MB
       headerCodedInStream.SetTotalBytesLimit(1024 * 1024 * 512,
                                              1024 * 1024 * 400);
+
       CodedInputStream::Limit oldLimit = headerCodedInStream.PushLimit(headerLength);
 
       if ( !protoHeader.ParseFromCodedStream(&headerCodedInStream) ) {
@@ -1071,7 +1071,6 @@ namespace Isis {
       QString msg = "An error occured while reading the protobuf control network header.";
       throw IException(IException::Io, msg, _FILEINFO_);
     }
-
     // initialize the header from the protobuf header
     try {
       ControlNetHeaderV0005 header;
@@ -1103,20 +1102,20 @@ namespace Isis {
     int pointIndex = -1;
     while (pointInStream.ByteCount() < pointsLength) {
       pointIndex += 1;
-      QSharedPointer<ControlPointFileEntryV0002> newPoint;
+      QSharedPointer<ControlPointFileEntryV0002> newPoint(new ControlPointFileEntryV0002);
 
       try {
-        CodedInputStream* pointCodedInStream = new CodedInputStream(&pointInStream);
-        pointCodedInStream->SetTotalBytesLimit(1024 * 1024 * 512,
+        CodedInputStream pointCodedInStream(&pointInStream);
+        pointCodedInStream.SetTotalBytesLimit(1024 * 1024 * 512,
                                               1024 * 1024 * 400);
         uint32_t size;
-        if ( !pointCodedInStream->ReadVarint32(&size) ) {
+        if ( !pointCodedInStream.ReadVarint32(&size) ) {
           // If we can't read another size, then assume at eof
           break;
         }
-        CodedInputStream::Limit oldPointLimit = pointCodedInStream->PushLimit(size);
-        newPoint->ParseFromCodedStream(pointCodedInStream);
-        pointCodedInStream->PopLimit(oldPointLimit);
+        CodedInputStream::Limit oldPointLimit = pointCodedInStream.PushLimit(size);
+        newPoint->ParseFromCodedStream(&pointCodedInStream);
+        pointCodedInStream.PopLimit(oldPointLimit);
       }
       catch (...) {
         QString msg = "Failed to read protobuf version 2 control point at index ["
@@ -1518,19 +1517,25 @@ namespace Isis {
       output.write(blankLabel, labelBytes);
       delete [] blankLabel;
 
-      streampos startCoreHeaderPos = output.tellp();
+      // Is there a better way we can get the total number of measures?
+      int numMeasures = 0;
+      int numPoints = 0;
+      foreach (ControlPoint *point, m_points) {
+        numMeasures += point->GetNumMeasures();
+        numPoints += 1;
+      }
 
-      OstreamOutputStream* fileStream = new OstreamOutputStream(&output);
+      streampos startCoreHeaderPos = output.tellp();
+      OstreamOutputStream *fileStream = new OstreamOutputStream(&output);
 
       writeHeader(fileStream);
 
       BigInt pointByteTotal = 0;
       while ( !m_points.isEmpty() ) {
-        pointByteTotal += writeFirstPoint(fileStream);
+         pointByteTotal += writeFirstPoint(fileStream);
       }
 
       // Insert header at the beginning of the file once writing is done.
-
       ControlNetFileHeaderV0005 protobufHeader;
 
       protobufHeader.set_networkid(m_header.networkID.toLatin1().data());
@@ -1567,13 +1572,8 @@ namespace Isis {
       netInfo += PvlKeyword("Created", protobufHeader.created().c_str());
       netInfo += PvlKeyword("LastModified", protobufHeader.lastmodified().c_str());
       netInfo += PvlKeyword("Description", protobufHeader.description().c_str());
-      netInfo += PvlKeyword("NumberOfPoints", toString(m_points.size()));
+      netInfo += PvlKeyword("NumberOfPoints", toString(numPoints));
 
-      // Is there a better way we can get the total number of measures?
-      int numMeasures = 0;
-      foreach (ControlPoint *point, m_points) {
-        numMeasures += point->GetNumMeasures();
-      }
       netInfo += PvlKeyword("NumberOfMeasures", toString(numMeasures));
       netInfo += PvlKeyword("Version", "5");
       protoObj.addGroup(netInfo);
@@ -1612,11 +1612,13 @@ namespace Isis {
     protobufHeader.set_lastmodified(m_header.lastModified.toLatin1().data());
     protobufHeader.set_description(m_header.description.toLatin1().data());
     protobufHeader.set_username(m_header.userName.toLatin1().data());
+
     // Write out the header
     if ( !protobufHeader.SerializeToCodedStream(&fileStream) ) {
       QString msg = "Failed to write output control network file.";
       throw IException(IException::Io, msg, _FILEINFO_);
     }
+
   }
 
 
