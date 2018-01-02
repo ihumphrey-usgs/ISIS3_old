@@ -337,7 +337,12 @@ namespace Isis {
           matrix += toString(aprioriCovarianceMatrix(1, 2));
           matrix += toString(aprioriCovarianceMatrix(2, 2));
 
-          if ( pvlRadii.hasKeyword("EquatorialRadius") ) {
+          if ( pvlRadii.hasKeyword("EquatorialRadius")
+               && pvlRadii.hasKeyword("PolarRadius") ) {
+            aprioriSurfacePoint.SetRadii(
+                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
+                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
+                  Distance(pvlRadii["PolarRadius"],Distance::Meters));
             QString sigmas = "AprioriLatitudeSigma = "
                              + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AprioriLongitudeSigma = "
@@ -394,7 +399,12 @@ namespace Isis {
           matrix += toString(adjustedCovarianceMatrix(1, 2));
           matrix += toString(adjustedCovarianceMatrix(2, 2));
 
-          if ( pvlRadii.hasKeyword("EquatorialRadius") ) {
+          if ( pvlRadii.hasKeyword("EquatorialRadius")
+               && pvlRadii.hasKeyword("PolarRadius") ) {
+            adjustedSurfacePoint.SetRadii(
+                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
+                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
+                  Distance(pvlRadii["PolarRadius"],Distance::Meters));
             QString sigmas = "AdjustedLatitudeSigma = "
                              + toString(adjustedSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AdjustedLongitudeSigma = "
@@ -490,17 +500,9 @@ namespace Isis {
           pvlMeasure += PvlKeyword("JigsawRejected", toString(controlMeasure.IsRejected()));
         }
 
-#if 0
-        for (int logEntry = 0;
-            logEntry < controlMeasure.GetLogDataEntries().size();
-            logEntry ++) {
-          const ControlMeasureLogData &log =
-                controlMeasure.GetLogData(logEntry); // Not sure this is right.
-
-          ControlMeasureLogData interpreter(log);
-          pvlMeasure += interpreter.ToKeyword();
+        foreach (ControlMeasureLogData log, controlMeasure.GetLogDataEntries()) {
+          pvlMeasure += log.ToKeyword();
         }
-#endif
 
         if ( controlPoint->HasRefMeasure() &&
            controlPoint->IndexOfRefMeasure() == j &&
