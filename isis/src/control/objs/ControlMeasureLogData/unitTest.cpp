@@ -56,7 +56,7 @@ int main() {
   cout << "Testing copy constructor 1..." << endl;
   {
     ControlMeasureLogData logDataTmp(ControlMeasureLogData::GoodnessOfFit,
-                                  3.14159);
+                                     3.14159);
     ControlMeasureLogData logData(logDataTmp);
 
     cout << "Valid? " << logData.IsValid() << "\n"
