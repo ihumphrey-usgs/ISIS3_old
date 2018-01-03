@@ -26,9 +26,9 @@ namespace Isis {
 
 
   /**
-   * Create a ControlPointV0002 object from a version 2 control point Pvl object
+   * Create a ControlPointV0002 object from a version 2 control point Pvl object.
    *
-   * @param pointObject The control point and its measures in a Pvl object
+   * @param pointObject The control point and its measures in a Pvl object.
    */
   ControlPointV0002::ControlPointV0002(PvlObject &pointObject)
    : m_pointData(new ControlNetFileProtoV0001_PBControlPoint),
@@ -72,11 +72,6 @@ namespace Isis {
 
     // Copy enumerated values
 
-    // The control point type names were changed between version 3 and version 4.
-    // In version 3, the types are ground, tie, and constrained
-    // In version 4, these were changed to fixed, free, and constrained respectively.
-    // The protobuf file version was not changed, fixed and free were simply added to the
-    // enumeration and the old names were flagged as obsolete.
     if (pointObject["PointType"][0] == "Ground") {
       m_pointData->set_type(ControlNetFileProtoV0001_PBControlPoint::Ground);
     }
@@ -242,6 +237,7 @@ namespace Isis {
       group.deleteKeyword("MeasureType");
 
       // Clean up the remaining keywords
+      // This also removes obsolete log data entries
       for (int cmKeyIndex = 0; cmKeyIndex < group.keywords(); cmKeyIndex ++) {
         if (group[cmKeyIndex][0] == ""
             || group[cmKeyIndex].name() == "ZScore"
@@ -316,8 +312,12 @@ namespace Isis {
 
 
   /**
-   * Create a version 2 control point from a version 1 control point. The two versions actually
-   * store the same values, so all this does is copy the internal protobuf object.
+   * Create a version 2 control point from a version 1 control point. The two versions internally
+   * store the same protobuf message, so all this does is copy the pointer to the internal protobuf
+   * object.
+   *
+   * @note Because the two points share the same container, modifications to one will affect the
+   *       other.
    *
    * @param oldPoint The old version 1 control point.
    */
@@ -351,7 +351,7 @@ namespace Isis {
 
   /**
    * This convenience method takes a boolean value from a PvlKeyword and copies it into a version 1
-   * protobuf field.
+   * protobuf field. Once copied, the PvlKeyword is deleted.
    *
    * If the keyword doesn't exist, this does nothing.
    *
@@ -382,7 +382,7 @@ namespace Isis {
 
   /**
    * This convenience method takes a double value from a PvlKeyword and copies it into a version 1
-   * protobuf field.
+   * protobuf field. Once copied, the PvlKeyword is deleted.
    *
    * If the keyword doesn't exist, this does nothing.
    *
@@ -410,7 +410,7 @@ namespace Isis {
 
   /**
    * This convenience method takes a string value from a PvlKeyword and copies it into a version 1
-   * protobuf field.
+   * protobuf field. Once copied, the PvlKeyword is deleted.
    *
    * If the keyword doesn't exist, this does nothing.
    *
@@ -438,7 +438,7 @@ namespace Isis {
 
   /**
    * This convenience method takes a boolean value from a PvlKeyword and copies it into a version 1
-   * protobuf field.
+   * protobuf field. Once copied, the PvlKeyword is deleted.
    *
    * If the keyword doesn't exist, this does nothing.
    *
@@ -469,7 +469,7 @@ namespace Isis {
 
   /**
    * This convenience method takes a double value from a PvlKeyword and copies it into a version 1
-   * protobuf field.
+   * protobuf field. Once copied, the PvlKeyword is deleted.
    *
    * If the keyword doesn't exist, this does nothing.
    *
@@ -497,7 +497,7 @@ namespace Isis {
 
   /**
    * This convenience method takes a string value from a PvlKeyword and copies it into a version 1
-   * protobuf field.
+   * protobuf field. Once copied, the PvlKeyword is deleted.
    *
    * If the keyword doesn't exist, this does nothing.
    *
