@@ -57,6 +57,7 @@ namespace Isis {
    *   @history 2017-12-14 Jesse Mapel - Original version.
    *   @history 2017-12-21 Jesse Mapel - Added support for measure log data.
    *   @history 2017-12-21 Adam Goins - Changed Pvl constructor to take PvlObject.
+   *   @history 2018-01-03 Jesse Mapel - Improved documentation.
    */
   class ControlPointV0002 {
     public:
