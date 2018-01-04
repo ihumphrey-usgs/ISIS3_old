@@ -148,6 +148,8 @@ namespace Isis {
    *                           ControlPointV#### classes.
    *   @history 2017-12-20 Jeannie Backer - Updated toPvl and write methods to get surface point
    *                           information from the ControlPoint.
+   *   @history 2018-01-04 Adam Goins - Updated read/write methods to read/write protobuf messages
+   *                           correctly.
    */
   class ControlNetVersioner {
 
@@ -216,8 +218,8 @@ namespace Isis {
 
       void createHeader(const ControlNetHeaderV0001 header);
 
-      void writeHeader(google::protobuf::io::ZeroCopyOutputStream *fileStream);
-      int writeFirstPoint(google::protobuf::io::ZeroCopyOutputStream *fileStream);
+      void writeHeader(std::fstream *output);
+      int writeFirstPoint(std::fstream *output);
 
       ControlNetHeaderV0005 m_header; /**< Header containing information about
                                            the whole network.*/
