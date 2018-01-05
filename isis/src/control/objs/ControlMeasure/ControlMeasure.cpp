@@ -53,8 +53,6 @@ namespace Isis {
     p_jigsawRejected = false;
     p_ignore = false;
 
-    p_sample = 0.0;
-    p_line = 0.0;
   }
 
 
@@ -92,6 +90,11 @@ namespace Isis {
 
   //! initialize pointers and other data to NULL
   void ControlMeasure::InitializeToNull() {
+
+    // Previously these were initialized to 0.0 in the constructor.
+    p_sample = Null;
+    p_line = Null;
+
     p_serialNumber = NULL;
     p_chooserName = NULL;
     p_dateTime = NULL;

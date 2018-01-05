@@ -456,12 +456,12 @@ namespace Isis {
           pvlMeasure += PvlKeyword("Ignore", "True");
         }
 
-        if ( controlMeasure.GetSample() != 0.0 ) {
+        if ( controlMeasure.GetSample() != Isis::Null) {
           pvlMeasure += PvlKeyword("Sample", toString(controlMeasure.GetSample()));
 
         }
 
-        if ( controlMeasure.GetLine() != 0.0 ) {
+        if ( controlMeasure.GetLine() != Isis::Null ) {
           pvlMeasure += PvlKeyword("Line", toString(controlMeasure.GetLine()));
         }
 
@@ -1412,13 +1412,6 @@ namespace Isis {
     // serial number is required, no need for if-statement
     newMeasure->SetCubeSerialNumber(QString(measure.serialnumber().c_str()));
 
-    if ( measure.has_choosername() ) {
-      newMeasure->SetChooserName(QString(measure.choosername().c_str()));
-    }
-    if ( measure.has_datetime() ) {
-      newMeasure->SetDateTime(QString(measure.datetime().c_str()));
-    }
-
     // measure type is required, no need for if-statement
     ControlMeasure::MeasureType measureType;
     switch ( measure.type() ) {
@@ -1481,6 +1474,14 @@ namespace Isis {
         logEntry.SetNumericalValue( protoLog.doubledatavalue() );
       }
       newMeasure->SetLogData(logEntry);
+    }
+
+    if ( measure.has_choosername() ) {
+      newMeasure->SetChooserName(QString(measure.choosername().c_str()));
+    }
+
+    if ( measure.has_datetime() ) {
+      newMeasure->SetDateTime(QString(measure.datetime().c_str()));
     }
 
     // It is VERY important that the edit lock flag is set last because it prevents
@@ -1851,11 +1852,11 @@ namespace Isis {
           protoMeasure.set_jigsawrejected(true);
         }
 
-        if ( controlMeasure.GetSample() != 0.0 ) {
+        if ( controlMeasure.GetSample() != Isis::Null ) {
           protoMeasure.set_sample(controlMeasure.GetSample());
         }
 
-        if ( controlMeasure.GetLine() != 0.0 ) {
+        if ( controlMeasure.GetLine() != Isis::Null ) {
           protoMeasure.set_line(controlMeasure.GetLine());
         }
 

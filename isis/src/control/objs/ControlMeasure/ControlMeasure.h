@@ -170,6 +170,8 @@ namespace Isis {
    *   @history 2017-12-20 Jesse Mapel - Implemented GetLogDataEntries method for use in
    *                           ControlNetVersioner refactor.
    *   @history 2017-12-21 Adam Goins - Removed protobuf references.
+   *   @history 2018-01-04 Adam Goins - Moved sample/line initialization from the constructor
+   *                           to the InitToNull() method.
    */
   class ControlMeasure : public QObject {
 
@@ -307,19 +309,6 @@ namespace Isis {
       double GetSampleShift() const;
       double GetLineShift() const;
       double GetPixelShift() const;
-
-      bool HasChooserName() const;
-      bool HasDateTime() const;
-      bool HasSample() const;
-      bool HasLine() const;
-      bool HasDiameter() const;
-      bool HasAprioriSample() const;
-      bool HasAprioriLine() const;
-      bool HasSampleSigma() const;
-      bool HasLineSigma() const;
-      bool HasSampleResidual() const;
-      bool HasLineResidual() const;
-      bool HasJigsawRejected() const;
 
       static QVector<QString> GetMeasureDataNames();
 
