@@ -41,7 +41,6 @@ namespace Isis {
   ControlPointV0001::ControlPointV0001(PvlObject &pointObject, const QString targetName)
    : m_pointData(new ControlNetFileProtoV0001_PBControlPoint),
      m_logData(new ControlNetLogDataProtoV0001_Point) {
-
     // Clean up the Pvl control point
     // Anything that doesn't have a value is removed
     for (int cpKeyIndex = 0; cpKeyIndex < pointObject.keywords(); cpKeyIndex ++) {
@@ -90,13 +89,9 @@ namespace Isis {
     else if ( pointObject.hasKeyword("X")
               && pointObject.hasKeyword("Y")
               && pointObject.hasKeyword("Z") ) {
-      m_pointData->set_adjustedx( toDouble(pointObject["Latitude"][0]) );
-      m_pointData->set_adjustedy( toDouble(pointObject["Longitude"][0]) );
-      m_pointData->set_adjustedz( toDouble(pointObject["Radius"][0]) );
-    }
-    else {
-      QString msg = "Unable to find adjusted surface point values for the control point.";
-      throw IException(IException::Io, msg, _FILEINFO_);
+      m_pointData->set_adjustedx( toDouble(pointObject["X"][0]) );
+      m_pointData->set_adjustedy( toDouble(pointObject["Y"][0]) );
+      m_pointData->set_adjustedz( toDouble(pointObject["Z"][0]) );
     }
 
     // copy over the apriori surface point
@@ -120,13 +115,10 @@ namespace Isis {
       m_pointData->set_aprioriy( m_pointData->adjustedy() );
       m_pointData->set_aprioriz( m_pointData->adjustedz() );
     }
-    else {
-      QString msg = "Unable to find apriori surface point values for the control point.";
-      throw IException(IException::Io, msg, _FILEINFO_);
-    }
 
     // Ground points were previously flagged by the Held keyword being true.
-    if (pointObject.hasKeyword("Held") && pointObject["Held"][0] == "True") {
+    if ( (pointObject.hasKeyword("Held") && pointObject["Held"][0] == "True") ||
+          (pointObject["PointType"][0] == "Ground") ) {
       m_pointData->set_type(ControlNetFileProtoV0001_PBControlPoint::Ground);
     }
     else if (pointObject["PointType"][0] == "Tie") {
@@ -392,7 +384,16 @@ namespace Isis {
         measure.mutable_measurement()->set_lineresidual(value);
         group.deleteKeyword("ErrorLine");
       }
-
+      if (group.hasKeyword("SampleResidual")) {
+        double value = toDouble(group["SampleResidual"][0]);
+        measure.mutable_measurement()->set_sampleresidual(value);
+        group.deleteKeyword("SampleResidual");
+      }
+      if (group.hasKeyword("LineResidual")) {
+        double value = toDouble(group["LineResidual"][0]);
+        measure.mutable_measurement()->set_lineresidual(value);
+        group.deleteKeyword("LineResidual");
+      }
       if (group.hasKeyword("Reference")) {
         if (group["Reference"][0].toLower() == "true") {
           m_pointData->set_referenceindex(groupIndex);
@@ -404,7 +405,8 @@ namespace Isis {
       if (group.hasKeyword("MeasureType")) {
         QString type = group["MeasureType"][0].toLower();
         if (type == "estimated"
-            || type == "unmeasured") {
+            || type == "unmeasured"
+            || type == "candidate") {
           measure.set_type(ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::Candidate);
         }
         else if (type == "manual") {
