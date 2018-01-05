@@ -244,8 +244,9 @@ namespace Isis {
     Distance equatorialRadius(radii["EquatorialRadius"], Distance::Meters);
     Distance polarRadius(radii["PolarRadius"], Distance::Meters);
 
-    if ( pointObject.hasKeyword("ApostCovarianceMatrix") ) {
-      PvlKeyword &matrix = pointObject["ApostCovarianceMatrix"];
+    // Add the Apriori Covariance Matrix
+    if ( pointObject.hasKeyword("AprioriCovarianceMatrix") ) {
+      PvlKeyword &matrix = pointObject["AprioriCovarianceMatrix"];
 
       m_pointData->add_aprioricovar(toDouble(matrix[0]));
       m_pointData->add_aprioricovar(toDouble(matrix[1]));
@@ -306,9 +307,24 @@ namespace Isis {
       m_pointData->add_aprioricovar( aprioriPoint.GetRectangularMatrix()(2, 2) );
     }
 
-    if ( pointObject.hasKeyword("AdjustedSigmaLatitude")
-         || pointObject.hasKeyword("AdjustedSigmaLongitude")
-         || pointObject.hasKeyword("AdjustedSigmaRadius") ) {
+    // Add the Adjusted (Apost) Covariance Matrix
+    if ( pointObject.hasKeyword("ApostCovarianceMatrix") ) {
+      PvlKeyword &matrix = pointObject["ApostCovarianceMatrix"];
+
+      m_pointData->add_adjustedcovar(toDouble(matrix[0]));
+      m_pointData->add_adjustedcovar(toDouble(matrix[1]));
+      m_pointData->add_adjustedcovar(toDouble(matrix[2]));
+      m_pointData->add_adjustedcovar(toDouble(matrix[3]));
+      m_pointData->add_adjustedcovar(toDouble(matrix[4]));
+      m_pointData->add_adjustedcovar(toDouble(matrix[5]));
+
+      m_pointData->set_latitudeconstrained(true);
+      m_pointData->set_longitudeconstrained(true);
+      m_pointData->set_radiusconstrained(true);
+    }
+    else if ( pointObject.hasKeyword("AdjustedSigmaLatitude")
+          || pointObject.hasKeyword("AdjustedSigmaLongitude")
+          || pointObject.hasKeyword("AdjustedSigmaRadius") ) {
       // There may be missing or negative adjusted sigmas so default to 10,000
       double sigmaLat = 10000.0;
       double sigmaLon = 10000.0;
