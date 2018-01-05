@@ -56,6 +56,8 @@ namespace Isis {
          m_pointData, &ControlNetFileProtoV0001_PBControlPoint::set_choosername);
     copy(pointObject, "DateTime",
          m_pointData, &ControlNetFileProtoV0001_PBControlPoint::set_datetime);
+    copy(pointObject, "AprioriXYZSourceFile",
+         m_pointData, &ControlNetFileProtoV0001_PBControlPoint::set_apriorisurfpointsourcefile);
     copy(pointObject, "AprioriLatLonSourceFile",
          m_pointData, &ControlNetFileProtoV0001_PBControlPoint::set_apriorisurfpointsourcefile);
     copy(pointObject, "AprioriRadiusSourceFile",
@@ -107,6 +109,13 @@ namespace Isis {
       m_pointData->set_aprioriy( aprioriPoint.GetY().meters() );
       m_pointData->set_aprioriz( aprioriPoint.GetZ().meters() );
     }
+    else if ( pointObject.hasKeyword("AprioriX")
+              && pointObject.hasKeyword("AprioriY")
+              && pointObject.hasKeyword("AprioriZ")) {
+      m_pointData->set_apriorix( toDouble(pointObject["AprioriX"][0]) );
+      m_pointData->set_aprioriy( toDouble(pointObject["AprioriY"][0]) );
+      m_pointData->set_aprioriz( toDouble(pointObject["AprioriZ"][0]) );
+    }
     // If the apriori values are missing, copy them from the adjusted.
     else if ( m_pointData->has_adjustedx()
               && m_pointData->has_adjustedy()
@@ -127,6 +136,33 @@ namespace Isis {
     else {
       QString msg = "Invalid ControlPoint type [" + pointObject["PointType"][0] + "].";
       throw IException(IException::User, msg, _FILEINFO_);
+    }
+
+ if (pointObject.hasKeyword("AprioriXYZSource")) {
+      QString source = pointObject["AprioriXYZSource"][0];
+
+      if (source == "None") {
+        m_pointData->set_apriorisurfpointsource(ControlNetFileProtoV0001_PBControlPoint::None);
+      }
+      else if (source == "User") {
+        m_pointData->set_apriorisurfpointsource(ControlNetFileProtoV0001_PBControlPoint::User);
+      }
+      else if (source == "AverageOfMeasures") {
+        m_pointData->set_apriorisurfpointsource(ControlNetFileProtoV0001_PBControlPoint::AverageOfMeasures);
+      }
+      else if (source == "Reference") {
+        m_pointData->set_apriorisurfpointsource(ControlNetFileProtoV0001_PBControlPoint::Reference);
+      }
+      else if (source == "Basemap") {
+        m_pointData->set_apriorisurfpointsource(ControlNetFileProtoV0001_PBControlPoint::Basemap);
+      }
+      else if (source == "BundleSolution") {
+        m_pointData->set_apriorisurfpointsource(ControlNetFileProtoV0001_PBControlPoint::BundleSolution);
+      }
+      else {
+        QString msg = "Invalid AprioriXYZSource [" + source + "]";
+        throw IException(IException::User, msg, _FILEINFO_);
+      }
     }
 
     if (pointObject.hasKeyword("AprioriLatLonSource")) {
