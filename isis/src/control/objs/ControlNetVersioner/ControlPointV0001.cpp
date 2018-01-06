@@ -10,6 +10,7 @@
 #include "NaifStatus.h"
 #include "Pvl.h"
 #include "PvlContainer.h"
+#include "SpecialPixel.h"
 #include "SurfacePoint.h"
 #include "Target.h"
 
@@ -74,7 +75,6 @@ namespace Isis {
          m_pointData, &ControlNetFileProtoV0001_PBControlPoint::set_longitudeconstrained);
     copy(pointObject, "RadiusConstrained",
          m_pointData, &ControlNetFileProtoV0001_PBControlPoint::set_radiusconstrained);
-
     // Copy over the adjusted surface point
     if ( pointObject.hasKeyword("Latitude")
          && pointObject.hasKeyword("Longitude")
@@ -407,7 +407,7 @@ namespace Isis {
         }
         catch (...) {
           value = 0;
-          m_pointData->set_ignore(true);
+          measure.set_ignore(true);
         }
         measure.mutable_measurement()->set_sample(value);
         group.deleteKeyword("Sample");
@@ -421,7 +421,7 @@ namespace Isis {
         }
         catch (...) {
           value = 0;
-          m_pointData->set_ignore(true);
+          measure.set_ignore(true);
         }
         measure.mutable_measurement()->set_line(value);
         group.deleteKeyword("Line");
@@ -436,16 +436,21 @@ namespace Isis {
         measure.mutable_measurement()->set_lineresidual(value);
         group.deleteKeyword("ErrorLine");
       }
+
+      double sampleResidualValue = Isis::Null;
       if (group.hasKeyword("SampleResidual")) {
-        double value = toDouble(group["SampleResidual"][0]);
-        measure.mutable_measurement()->set_sampleresidual(value);
+        sampleResidualValue = toDouble(group["SampleResidual"][0]);
         group.deleteKeyword("SampleResidual");
       }
+      measure.mutable_measurement()->set_sampleresidual(sampleResidualValue);
+
+      double lineResidualValue = Isis::Null;
       if (group.hasKeyword("LineResidual")) {
-        double value = toDouble(group["LineResidual"][0]);
-        measure.mutable_measurement()->set_lineresidual(value);
+        lineResidualValue = toDouble(group["LineResidual"][0]);
         group.deleteKeyword("LineResidual");
       }
+      measure.mutable_measurement()->set_lineresidual(lineResidualValue);
+
       if (group.hasKeyword("Reference")) {
         if (group["Reference"][0].toLower() == "true") {
           m_pointData->set_referenceindex(groupIndex);
@@ -552,6 +557,7 @@ namespace Isis {
                     "points or measures";
       throw IException(IException::Io, msg, _FILEINFO_);
     }
+
   }
 
 
@@ -714,11 +720,13 @@ namespace Isis {
                                ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure &measure,
                                void (ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::*setter)(double)) {
 
-    if (!container.hasKeyword(keyName))
-      return;
+    double value = Isis::Null;
+    if ( container.hasKeyword(keyName) ) {
+      value = toDouble(container[keyName][0]);
+      container.deleteKeyword(keyName);
 
-    double value = toDouble(container[keyName][0]);
-    container.deleteKeyword(keyName);
+    }
+
     (measure.*setter)(value);
   }
 
@@ -743,8 +751,9 @@ namespace Isis {
                                void (ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::*setter)
                                       (const std::string &)) {
 
-    if (!container.hasKeyword(keyName))
+    if (!container.hasKeyword(keyName)) 
       return;
+
 
     QString value = container[keyName][0];
     container.deleteKeyword(keyName);

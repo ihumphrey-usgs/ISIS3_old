@@ -242,11 +242,17 @@ namespace Isis {
       else {
         pvlPoint += PvlKeyword("PointId", controlPoint->GetId());
       }
-      if ( !controlPoint->GetChooserName().isEmpty() ) {
+      if ( controlPoint->HasChooserName() ) {
         pvlPoint += PvlKeyword("ChooserName", controlPoint->GetChooserName());
       }
-      if ( !controlPoint->GetDateTime().isEmpty() ) {
+      else {
+        pvlPoint += PvlKeyword("ChooserName", "");
+      }
+      if ( controlPoint->HasDateTime() ) {
         pvlPoint += PvlKeyword("DateTime", controlPoint->GetDateTime());
+      }
+      else {
+        pvlPoint += PvlKeyword("DateTime", "");
       }
       if ( controlPoint->IsEditLocked() ) {
         pvlPoint += PvlKeyword("EditLock", "True");
@@ -329,7 +335,11 @@ namespace Isis {
 
         // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
         symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
-        if ( aprioriCovarianceMatrix.size1() > 0 ) {
+        if ( aprioriCovarianceMatrix.size1() > 0 &&
+             aprioriSurfacePoint.GetLatSigmaDistance().meters() != Isis::Null &&
+             aprioriSurfacePoint.GetLonSigmaDistance().meters() != Isis::Null &&
+             aprioriSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null) {
+
           PvlKeyword matrix("AprioriCovarianceMatrix");
           matrix += toString(aprioriCovarianceMatrix(0, 0));
           matrix += toString(aprioriCovarianceMatrix(0, 1));
@@ -440,14 +450,12 @@ namespace Isis {
             break;
         }
 
-        if ( !controlMeasure.GetChooserName().isEmpty() ) {
+        if ( controlMeasure.HasChooserName() ) {
           pvlMeasure += PvlKeyword("ChooserName", controlMeasure.GetChooserName());
         }
-
-        if ( !controlMeasure.GetDateTime().isEmpty() ) {
+        if ( controlMeasure.HasDateTime() ) {
           pvlMeasure += PvlKeyword("DateTime", controlMeasure.GetDateTime());
         }
-
         if ( controlMeasure.IsEditLocked() ) {
           pvlMeasure += PvlKeyword("EditLock", "True");
         }
@@ -465,7 +473,8 @@ namespace Isis {
           pvlMeasure += PvlKeyword("Line", toString(controlMeasure.GetLine()));
         }
 
-        if ( controlMeasure.GetDiameter() != Isis::Null ) {
+        if ( controlMeasure.GetDiameter() != Isis::Null
+             && controlMeasure.GetDiameter() != 0. ) {
           pvlMeasure += PvlKeyword("Diameter", toString(controlMeasure.GetDiameter()));
         }
 
@@ -562,6 +571,7 @@ namespace Isis {
     if ( controlNetwork.hasKeyword("Version") ) {
       version = toInt(controlNetwork["Version"][0]);
     }
+
     switch ( version ) {
       case 1:
         readPvlV0001(controlNetwork);
@@ -1649,10 +1659,10 @@ namespace Isis {
         protoPoint.set_id(controlPoint->GetId().toLatin1().data());
       }
 
-      if ( !controlPoint->GetChooserName().isEmpty() ) {
+      if ( controlPoint->HasChooserName() ) {
         protoPoint.set_choosername(controlPoint->GetChooserName().toLatin1().data());
       }
-      if ( !controlPoint->GetDateTime().isEmpty() ) {
+      if ( controlPoint->HasDateTime() ) {
         protoPoint.set_datetime(controlPoint->GetDateTime().toLatin1().data());
       }
       if ( controlPoint->IsEditLocked() ) {
@@ -1761,7 +1771,11 @@ namespace Isis {
         protoPoint.set_aprioriz(aprioriSurfacePoint.GetZ().meters());
 
         symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
-        if ( aprioriCovarianceMatrix.size1() > 0 ) {
+        if ( aprioriCovarianceMatrix.size1() > 0 &&
+             aprioriSurfacePoint.GetLatSigmaDistance().meters() != Isis::Null &&
+             aprioriSurfacePoint.GetLonSigmaDistance().meters() != Isis::Null &&
+             aprioriSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null) {
+
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 0));
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 1));
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 2));
@@ -1770,7 +1784,6 @@ namespace Isis {
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(2, 2));
         }
       }
-
       // this might be redundant... determined by covariance matrix???
       if ( controlPoint->IsLatitudeConstrained() ) {
         protoPoint.set_latitudeconstrained(controlPoint->IsLatitudeConstrained());
@@ -1832,11 +1845,11 @@ namespace Isis {
                 break;
         }
 
-        if ( !controlMeasure.GetChooserName().isEmpty() ) {
+        if ( controlMeasure.HasChooserName() ) {
           protoMeasure.set_choosername(controlMeasure.GetChooserName().toLatin1().data());
         }
 
-        if ( !controlMeasure.GetDateTime().isEmpty() ) {
+        if ( controlMeasure.HasDateTime() ) {
           protoMeasure.set_datetime(controlMeasure.GetDateTime().toLatin1().data());
         }
 
