@@ -333,10 +333,8 @@ namespace Isis {
 
         // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
         symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
-        if ( aprioriCovarianceMatrix.size1() > 0 &&
-             aprioriSurfacePoint.GetLatSigmaDistance().meters() != Isis::Null &&
-             aprioriSurfacePoint.GetLonSigmaDistance().meters() != Isis::Null &&
-             aprioriSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null) {
+
+        if ( aprioriCovarianceMatrix.size1() > 0 ) {
 
           PvlKeyword matrix("AprioriCovarianceMatrix");
           matrix += toString(aprioriCovarianceMatrix(0, 0));
@@ -346,22 +344,37 @@ namespace Isis {
           matrix += toString(aprioriCovarianceMatrix(1, 2));
           matrix += toString(aprioriCovarianceMatrix(2, 2));
 
-          if ( pvlRadii.hasKeyword("EquatorialRadius")
-               && pvlRadii.hasKeyword("PolarRadius") ) {
-            aprioriSurfacePoint.SetRadii(
-                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                  Distance(pvlRadii["PolarRadius"],Distance::Meters));
-            QString sigmas = "AprioriLatitudeSigma = "
-                             + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
-                             + " <meters>  AprioriLongitudeSigma = "
-                             + toString(aprioriSurfacePoint.GetLonSigmaDistance().meters())
-                             + " <meters>  AprioriRadiusSigma = "
-                             + toString(aprioriSurfacePoint.GetLocalRadiusSigma().meters())
-                             + " <meters>";
-            matrix.addComment(sigmas);
+          if ( pvlRadii.hasKeyword("EquatorialRadius") && pvlRadii.hasKeyword("PolarRadius") ) {
+
+            aprioriSurfacePoint.SetRadii( Distance(pvlRadii["EquatorialRadius"], Distance::Meters),
+                                          Distance(pvlRadii["EquatorialRadius"], Distance::Meters),
+                                          Distance(pvlRadii["PolarRadius"], Distance::Meters) );
+
+            if ( aprioriSurfacePoint.GetLatSigmaDistance().meters() != Isis::Null
+                 && aprioriSurfacePoint.GetLonSigmaDistance().meters() != Isis::Null
+                 && aprioriSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null ) {
+
+              QString sigmas = "AprioriLatitudeSigma = "
+              + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
+              + " <meters>  AprioriLongitudeSigma = "
+              + toString(aprioriSurfacePoint.GetLonSigmaDistance().meters())
+              + " <meters>  AprioriRadiusSigma = "
+              + toString(aprioriSurfacePoint.GetLocalRadiusSigma().meters())
+              + " <meters>";
+              matrix.addComment(sigmas);
+            }
           }
-          pvlPoint += matrix;
+
+          // If the covariance matrix has a value, add it to the PVL point.
+          if ( aprioriCovarianceMatrix(0, 0) != 0.0
+               || aprioriCovarianceMatrix(0, 1) != 0.0
+               || aprioriCovarianceMatrix(0, 2) != 0.0
+               || aprioriCovarianceMatrix(1, 1) != 0.0
+               || aprioriCovarianceMatrix(1, 2) != 0.0
+               || aprioriCovarianceMatrix(2, 2) ) {
+
+                 pvlPoint += matrix;
+            }
         }
       }
 
