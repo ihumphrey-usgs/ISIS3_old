@@ -81,6 +81,7 @@ namespace Isis {
       }
       headerCodedInStream.PopLimit(oldLimit);
 
+
       // We need to regenerate the coded input stream every so many bytes
       // choose 64 MB as a safe amount
       int streamThreshold = 1024 * 1024 * 64;

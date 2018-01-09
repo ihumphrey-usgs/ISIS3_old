@@ -205,7 +205,7 @@ namespace Isis {
    *                           import in constructor. Also removed p_invalid as it was no longer
    *                           being used anywhere. Fixes #5068.
    *   @history 2017-12-12 Kristin Berry - Updated to use QMap and QVector rather than std::map
-   *                            and std::vector. 
+   *                            and std::vector. Fixes #5259.
    */
   class ControlNet : public QObject {
       Q_OBJECT

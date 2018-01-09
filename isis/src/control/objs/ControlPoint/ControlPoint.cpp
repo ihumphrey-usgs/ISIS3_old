@@ -8,7 +8,6 @@
 #include <QHash>
 #include <QString>
 #include <QStringList>
-#include <QVector>
 
 #include "Application.h"
 #include "CameraDetectorMap.h"

@@ -337,7 +337,7 @@ namespace Isis {
     // Log into the output file
     ostm << "Filename, SerialNumber, TotalPoints, PointsIgnored, PointsEditLocked, Fixed, Constrained, Free, ConvexHullRatio" <<  endl;
     //for (it = mImageMap.begin(); it != mImageMap.end(); it++) {
-//    for (it = mSerialNumMap.begin(); it != mSerialNumMap.end(); it++) {
+
     for (it = mSerialNumMap.begin(); it != mSerialNumMap.end(); it++) {
       ostm << mSerialNumList.fileName(it.key()) << ", " << it.key() << ", ";
       bool serialNumExists = it.value() ;
