@@ -242,17 +242,13 @@ namespace Isis {
       else {
         pvlPoint += PvlKeyword("PointId", controlPoint->GetId());
       }
-      if ( controlPoint->HasChooserName() ) {
+      if ( controlPoint->HasChooserName()
+           && QString::compare(controlPoint->GetChooserName(), "Null", Qt::CaseInsensitive) != 0 ) {
         pvlPoint += PvlKeyword("ChooserName", controlPoint->GetChooserName());
       }
-      else {
-        pvlPoint += PvlKeyword("ChooserName", "");
-      }
-      if ( controlPoint->HasDateTime() ) {
+      if ( controlPoint->HasDateTime()
+           && QString::compare(controlPoint->GetDateTime(), "Null", Qt::CaseInsensitive) != 0 ) {
         pvlPoint += PvlKeyword("DateTime", controlPoint->GetDateTime());
-      }
-      else {
-        pvlPoint += PvlKeyword("DateTime", "");
       }
       if ( controlPoint->IsEditLocked() ) {
         pvlPoint += PvlKeyword("EditLock", "True");
@@ -333,12 +329,9 @@ namespace Isis {
         pvlPoint += aprioriY;
         pvlPoint += aprioriZ;
 
-        // FIXME: None of Covariance matrix information is available directly from ControlPoint in the API
         symmetric_matrix<double, upper> aprioriCovarianceMatrix = aprioriSurfacePoint.GetRectangularMatrix();
-        if ( aprioriCovarianceMatrix.size1() > 0 &&
-             aprioriSurfacePoint.GetLatSigmaDistance().meters() != Isis::Null &&
-             aprioriSurfacePoint.GetLonSigmaDistance().meters() != Isis::Null &&
-             aprioriSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null) {
+
+        if ( aprioriCovarianceMatrix.size1() > 0 ) {
 
           PvlKeyword matrix("AprioriCovarianceMatrix");
           matrix += toString(aprioriCovarianceMatrix(0, 0));
@@ -348,22 +341,37 @@ namespace Isis {
           matrix += toString(aprioriCovarianceMatrix(1, 2));
           matrix += toString(aprioriCovarianceMatrix(2, 2));
 
-          if ( pvlRadii.hasKeyword("EquatorialRadius")
-               && pvlRadii.hasKeyword("PolarRadius") ) {
-            aprioriSurfacePoint.SetRadii(
-                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                  Distance(pvlRadii["PolarRadius"],Distance::Meters));
-            QString sigmas = "AprioriLatitudeSigma = "
-                             + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
-                             + " <meters>  AprioriLongitudeSigma = "
-                             + toString(aprioriSurfacePoint.GetLonSigmaDistance().meters())
-                             + " <meters>  AprioriRadiusSigma = "
-                             + toString(aprioriSurfacePoint.GetLocalRadiusSigma().meters())
-                             + " <meters>";
-            matrix.addComment(sigmas);
+          if ( pvlRadii.hasKeyword("EquatorialRadius") && pvlRadii.hasKeyword("PolarRadius") ) {
+
+            aprioriSurfacePoint.SetRadii( Distance(pvlRadii["EquatorialRadius"], Distance::Meters),
+                                          Distance(pvlRadii["EquatorialRadius"], Distance::Meters),
+                                          Distance(pvlRadii["PolarRadius"], Distance::Meters) );
+
+            if ( aprioriSurfacePoint.GetLatSigmaDistance().meters() != Isis::Null
+                 && aprioriSurfacePoint.GetLonSigmaDistance().meters() != Isis::Null
+                 && aprioriSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null ) {
+
+              QString sigmas = "AprioriLatitudeSigma = "
+              + toString(aprioriSurfacePoint.GetLatSigmaDistance().meters())
+              + " <meters>  AprioriLongitudeSigma = "
+              + toString(aprioriSurfacePoint.GetLonSigmaDistance().meters())
+              + " <meters>  AprioriRadiusSigma = "
+              + toString(aprioriSurfacePoint.GetLocalRadiusSigma().meters())
+              + " <meters>";
+              matrix.addComment(sigmas);
+            }
           }
-          pvlPoint += matrix;
+
+          // If the covariance matrix has a value, add it to the PVL point.
+          if ( aprioriCovarianceMatrix(0, 0) != 0.0
+               || aprioriCovarianceMatrix(0, 1) != 0.0
+               || aprioriCovarianceMatrix(0, 2) != 0.0
+               || aprioriCovarianceMatrix(1, 1) != 0.0
+               || aprioriCovarianceMatrix(1, 2) != 0.0
+               || aprioriCovarianceMatrix(2, 2) != 0.0 ) {
+
+                 pvlPoint += matrix;
+            }
         }
       }
 
@@ -401,7 +409,9 @@ namespace Isis {
         pvlPoint += adjustedZ;
 
         symmetric_matrix<double, upper> adjustedCovarianceMatrix = adjustedSurfacePoint.GetRectangularMatrix();
+
         if ( adjustedCovarianceMatrix.size1() > 0 ) {
+
           PvlKeyword matrix("AdjustedCovarianceMatrix");
           matrix += toString(adjustedCovarianceMatrix(0, 0));
           matrix += toString(adjustedCovarianceMatrix(0, 1));
@@ -410,12 +420,16 @@ namespace Isis {
           matrix += toString(adjustedCovarianceMatrix(1, 2));
           matrix += toString(adjustedCovarianceMatrix(2, 2));
 
-          if ( pvlRadii.hasKeyword("EquatorialRadius")
-               && pvlRadii.hasKeyword("PolarRadius") ) {
-            adjustedSurfacePoint.SetRadii(
-                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                  Distance(pvlRadii["EquatorialRadius"],Distance::Meters),
-                  Distance(pvlRadii["PolarRadius"],Distance::Meters));
+          if ( pvlRadii.hasKeyword("EquatorialRadius") && pvlRadii.hasKeyword("PolarRadius") ) {
+
+            adjustedSurfacePoint.SetRadii( Distance(pvlRadii["EquatorialRadius"], Distance::Meters),
+                                           Distance(pvlRadii["EquatorialRadius"], Distance::Meters),
+                                           Distance(pvlRadii["PolarRadius"], Distance::Meters) );
+
+            if ( adjustedSurfacePoint.GetLatSigmaDistance().meters() != Isis::Null
+                 && adjustedSurfacePoint.GetLonSigmaDistance().meters() != Isis::Null
+                 && adjustedSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null ) {
+
             QString sigmas = "AdjustedLatitudeSigma = "
                              + toString(adjustedSurfacePoint.GetLatSigmaDistance().meters())
                              + " <meters>  AdjustedLongitudeSigma = "
@@ -423,9 +437,20 @@ namespace Isis {
                              + " <meters>  AdjustedRadiusSigma = "
                              + toString(adjustedSurfacePoint.GetLocalRadiusSigma().meters())
                              + " <meters>";
+
             matrix.addComment(sigmas);
+            }
           }
-          pvlPoint += matrix;
+          // If the covariance matrix has a value, add it to the PVL point.
+          if ( adjustedCovarianceMatrix(0, 0) != 0.0
+               || adjustedCovarianceMatrix(0, 1) != 0.0
+               || adjustedCovarianceMatrix(0, 2) != 0.0
+               || adjustedCovarianceMatrix(1, 1) != 0.0
+               || adjustedCovarianceMatrix(1, 2) != 0.0
+               || adjustedCovarianceMatrix(2, 2) != 0.0 ) {
+
+                 pvlPoint += matrix;
+          }
         }
       }
 
@@ -450,10 +475,12 @@ namespace Isis {
             break;
         }
 
-        if ( controlMeasure.HasChooserName() ) {
+        if ( controlMeasure.HasChooserName()
+             && QString::compare(controlMeasure.GetChooserName(), "Null", Qt::CaseInsensitive) != 0 ) {
           pvlMeasure += PvlKeyword("ChooserName", controlMeasure.GetChooserName());
         }
-        if ( controlMeasure.HasDateTime() ) {
+        if ( controlMeasure.HasDateTime()
+             && QString::compare(controlMeasure.GetDateTime(), "Null", Qt::CaseInsensitive) != 0 ) {
           pvlMeasure += PvlKeyword("DateTime", controlMeasure.GetDateTime());
         }
         if ( controlMeasure.IsEditLocked() ) {
@@ -496,12 +523,14 @@ namespace Isis {
                                    "pixels");
         }
 
-        if ( controlMeasure.GetSampleResidual() != Isis::Null ) {
+        if ( controlMeasure.GetSampleResidual() != Isis::Null
+             && controlMeasure.GetSampleResidual() != 0. ) {
           pvlMeasure += PvlKeyword("SampleResidual", toString(controlMeasure.GetSampleResidual()),
                                    "pixels");
         }
 
-        if ( controlMeasure.GetLineResidual() != Isis::Null ) {
+        if ( controlMeasure.GetLineResidual() != Isis::Null
+             && controlMeasure.GetLineResidual() != 0. ) {
           pvlMeasure += PvlKeyword("LineResidual", toString(controlMeasure.GetLineResidual()),
                                    "pixels");
         }
@@ -1335,6 +1364,7 @@ namespace Isis {
       SurfacePoint aprioriSurfacePoint(Displacement(protoPoint.apriorix(), Displacement::Meters),
                                        Displacement(protoPoint.aprioriy(), Displacement::Meters),
                                        Displacement(protoPoint.aprioriz(), Displacement::Meters));
+
       if ( protoPoint.aprioricovar_size() > 0 ) {
         symmetric_matrix<double, upper> aprioriCovarianceMatrix;
         aprioriCovarianceMatrix.resize(3);
@@ -1659,10 +1689,12 @@ namespace Isis {
         protoPoint.set_id(controlPoint->GetId().toLatin1().data());
       }
 
-      if ( controlPoint->HasChooserName() ) {
+      if ( controlPoint->HasChooserName()
+           && QString::compare(controlPoint->GetChooserName(), "Null", Qt::CaseInsensitive) != 0 ) {
         protoPoint.set_choosername(controlPoint->GetChooserName().toLatin1().data());
       }
-      if ( controlPoint->HasDateTime() ) {
+      if ( controlPoint->HasDateTime()
+           && QString::compare(controlPoint->GetDateTime(), "Null", Qt::CaseInsensitive) != 0 ) {
         protoPoint.set_datetime(controlPoint->GetDateTime().toLatin1().data());
       }
       if ( controlPoint->IsEditLocked() ) {
@@ -1774,7 +1806,7 @@ namespace Isis {
         if ( aprioriCovarianceMatrix.size1() > 0 &&
              aprioriSurfacePoint.GetLatSigmaDistance().meters() != Isis::Null &&
              aprioriSurfacePoint.GetLonSigmaDistance().meters() != Isis::Null &&
-             aprioriSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null) {
+             aprioriSurfacePoint.GetLocalRadiusSigma().meters() != Isis::Null ) {
 
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 0));
           protoPoint.add_aprioricovar(aprioriCovarianceMatrix(0, 1));
@@ -1845,11 +1877,13 @@ namespace Isis {
                 break;
         }
 
-        if ( controlMeasure.HasChooserName() ) {
+        if ( controlMeasure.HasChooserName()
+             && QString::compare(controlMeasure.GetChooserName(), "Null", Qt::CaseInsensitive) != 0 ) {
           protoMeasure.set_choosername(controlMeasure.GetChooserName().toLatin1().data());
         }
 
-        if ( controlMeasure.HasDateTime() ) {
+        if ( controlMeasure.HasDateTime()
+             && QString::compare(controlMeasure.GetDateTime(), "Null", Qt::CaseInsensitive) != 0 ) {
           protoMeasure.set_datetime(controlMeasure.GetDateTime().toLatin1().data());
         }
 
