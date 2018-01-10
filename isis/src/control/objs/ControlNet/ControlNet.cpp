@@ -1479,15 +1479,15 @@ namespace Isis {
   }
 
 
-  //! Return QList of ControlPoints ordered by point ID
+  //! Return QList of all the ControlPoints in the network
   QList< ControlPoint * > ControlNet::GetPoints() {
-    QList< ControlPoint * > orderedPoints;
+    QList< ControlPoint * > pointsList;
 
     for (int i = 0; i < pointIds->size(); i++) {
-      orderedPoints.append(GetPoint(i));
+      pointsList.append(GetPoint(i));
     }
 
-    return orderedPoints;
+    return pointsList;
   }
 
 
