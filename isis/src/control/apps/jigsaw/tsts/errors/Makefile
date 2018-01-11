@@ -71,4 +71,5 @@ commands:
 	then \
 	  true; \
 	fi;
-	
+# Remove paths from errors file
+	sed -i 's/\(\[\)\/.*\(input\)/\1\2/g' $(OUTPUT)/error.txt;
