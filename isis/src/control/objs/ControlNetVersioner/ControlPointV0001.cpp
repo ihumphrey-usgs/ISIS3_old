@@ -426,6 +426,9 @@ namespace Isis {
         measure.mutable_measurement()->set_line(value);
         group.deleteKeyword("Line");
       }
+
+      // Some old networks use ErrorSample and ErrorLine,
+      // others use SampleResidual and LineResidual so check for both
       if (group.hasKeyword("ErrorSample")) {
         double value = toDouble(group["ErrorSample"][0]);
         measure.mutable_measurement()->set_sampleresidual(value);
@@ -437,19 +440,18 @@ namespace Isis {
         group.deleteKeyword("ErrorLine");
       }
 
-      double sampleResidualValue = Isis::Null;
       if (group.hasKeyword("SampleResidual")) {
-        sampleResidualValue = toDouble(group["SampleResidual"][0]);
+        double value = toDouble(group["SampleResidual"][0]);
+        measure.mutable_measurement()->set_sampleresidual(value);
         group.deleteKeyword("SampleResidual");
       }
       measure.mutable_measurement()->set_sampleresidual(sampleResidualValue);
 
-      double lineResidualValue = Isis::Null;
       if (group.hasKeyword("LineResidual")) {
-        lineResidualValue = toDouble(group["LineResidual"][0]);
+        double value = toDouble(group["LineResidual"][0]);
+        measure.mutable_measurement()->set_lineresidual(value);
         group.deleteKeyword("LineResidual");
       }
-      measure.mutable_measurement()->set_lineresidual(lineResidualValue);
 
       if (group.hasKeyword("Reference")) {
         if (group["Reference"][0].toLower() == "true") {
@@ -721,6 +723,10 @@ namespace Isis {
                                ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure &measure,
                                void (ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::*setter)(double)) {
 
+    if (!container.hasKeyword(keyName)) {
+      return;
+    }
+
     double value = Isis::Null;
     if ( container.hasKeyword(keyName) ) {
       value = toDouble(container[keyName][0]);
@@ -752,7 +758,7 @@ namespace Isis {
                                void (ControlNetFileProtoV0001_PBControlPoint_PBControlMeasure::*setter)
                                       (const std::string &)) {
 
-    if (!container.hasKeyword(keyName)) 
+    if (!container.hasKeyword(keyName))
       return;
 
 
