@@ -31,7 +31,6 @@
 
 using boost::numeric::ublas::symmetric_matrix;
 using boost::numeric::ublas::upper;
-using namespace std;
 
 namespace Isis {
   /**
