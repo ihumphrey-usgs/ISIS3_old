@@ -72,12 +72,13 @@ namespace Isis {
    * ControlPoints.
    *
    * @param netFile The control network file to read in.
+   * @param progress The progress object to track reading points.
    *
    * @see ControlNetVersioner::Read
    */
-  ControlNetVersioner::ControlNetVersioner(const FileName netFile)
+  ControlNetVersioner::ControlNetVersioner(const FileName netFile, Progress *progress)
       : m_ownsPoints(true) {
-    read(netFile);
+    read(netFile, progress);
   }
 
 
@@ -559,17 +560,18 @@ namespace Isis {
    * a control network.
    *
    * @param netFile The control network file to read.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::read(const FileName netFile) {
+  void ControlNetVersioner::read(const FileName netFile, Progress *progress) {
     try {
 
       const Pvl &network(netFile.expanded());
 
       if ( network.hasObject("ProtoBuffer") ) {
-        readProtobuf(network, netFile);
+        readProtobuf(network, netFile, progress);
       }
       else if ( network.hasObject("ControlNetwork") ) {
-        readPvl(network);
+        readPvl(network, progress);
       }
       else {
         QString msg = "Could not determine the control network file type";
@@ -589,8 +591,9 @@ namespace Isis {
    * control network.
    *
    * @param network The Pvl network data
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readPvl(const Pvl &network) {
+  void ControlNetVersioner::readPvl(const Pvl &network, Progress *progress) {
     const PvlObject &controlNetwork = network.findObject("ControlNetwork");
 
     int version = 1;
@@ -601,19 +604,19 @@ namespace Isis {
 
     switch ( version ) {
       case 1:
-        readPvlV0001(controlNetwork);
+        readPvlV0001(controlNetwork, progress);
         break;
       case 2:
-        readPvlV0002(controlNetwork);
+        readPvlV0002(controlNetwork, progress);
         break;
       case 3:
-        readPvlV0003(controlNetwork);
+        readPvlV0003(controlNetwork, progress);
         break;
       case 4:
-        readPvlV0004(controlNetwork);
+        readPvlV0004(controlNetwork, progress);
         break;
       case 5:
-        readPvlV0005(controlNetwork);
+        readPvlV0005(controlNetwork, progress);
         break;
       default:
         QString msg = "The Pvl file version [" + toString(version)
@@ -627,8 +630,9 @@ namespace Isis {
    * read a version 1 Pvl control network and convert the data into control points.
    *
    * @param network The control network PvlObject.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readPvlV0001(const PvlObject &network) {
+  void ControlNetVersioner::readPvlV0001(const PvlObject &network, Progress *progress) {
     // initialize the header
     ControlNetHeaderV0001 header;
 
@@ -646,6 +650,12 @@ namespace Isis {
       throw IException(e, IException::Io, msg, _FILEINFO_);
     }
 
+    if (progress) {
+      progress->SetText("Reading Control Points...");
+      progress->SetMaximumSteps(network.objects());
+      progress->CheckStatus();
+    }
+
     // initialize the control points
     for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
       try {
@@ -654,6 +664,11 @@ namespace Isis {
         ControlPointV0001 point(pointObject, m_header.targetName);
 
         m_points.append( createPoint(point) );
+
+        if (progress) {
+          progress->CheckStatus();
+        }
+
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -668,8 +683,9 @@ namespace Isis {
    * read a version 2 Pvl control network and convert the data into control points.
    *
    * @param network The control network PvlObject.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readPvlV0002(const PvlObject &network) {
+  void ControlNetVersioner::readPvlV0002(const PvlObject &network, Progress *progress) {
     // initialize the header
     try {
       ControlNetHeaderV0002 header;
@@ -686,12 +702,23 @@ namespace Isis {
       throw IException(e, IException::Io, msg, _FILEINFO_);
     }
 
+    if (progress) {
+      progress->SetText("Reading Control Points...");
+      progress->SetMaximumSteps(network.objects());
+      progress->CheckStatus();
+    }
+
     // initialize the control points
     for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
       try {
         PvlObject pointObject = network.object(objectIndex);
         ControlPointV0002 point(pointObject);
         m_points.append( createPoint(point) );
+
+        if (progress) {
+          progress->CheckStatus();
+        }
+
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -706,8 +733,9 @@ namespace Isis {
    * read a version 3 Pvl control network and convert the data into control points.
    *
    * @param network The control network PvlObject.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readPvlV0003(const PvlObject &network) {
+  void ControlNetVersioner::readPvlV0003(const PvlObject &network, Progress *progress) {
     // initialize the header
     try {
       ControlNetHeaderV0003 header;
@@ -724,12 +752,23 @@ namespace Isis {
       throw IException(e, IException::Io, msg, _FILEINFO_);
     }
 
+    if (progress) {
+      progress->SetText("Reading Control Points...");
+      progress->SetMaximumSteps(network.objects());
+      progress->CheckStatus();
+    }
+
     // initialize the control points
     for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
       try {
         PvlObject pointObject = network.object(objectIndex);
         ControlPointV0003 point(pointObject);
         m_points.append( createPoint(point) );
+
+        if (progress) {
+          progress->CheckStatus();
+        }
+
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -744,8 +783,9 @@ namespace Isis {
    * read a version 4 Pvl control network and convert the data into control points.
    *
    * @param network The control network PvlObject.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readPvlV0004(const PvlObject &network) {
+  void ControlNetVersioner::readPvlV0004(const PvlObject &network, Progress *progress) {
     // initialize the header
     try {
       ControlNetHeaderV0004 header;
@@ -762,12 +802,22 @@ namespace Isis {
       throw IException(e, IException::Io, msg, _FILEINFO_);
     }
 
+    if (progress) {
+      progress->SetText("Reading Control Points...");
+      progress->SetMaximumSteps(network.objects());
+      progress->CheckStatus();
+    }
+
     // initialize the control points
     for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
       try {
         PvlObject pointObject = network.object(objectIndex);
         ControlPointV0004 point(pointObject);
         m_points.append( createPoint(point) );
+
+        if (progress) {
+          progress->CheckStatus();
+        }
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -782,8 +832,9 @@ namespace Isis {
    * read a version 5 Pvl control network and convert the data into control points.
    *
    * @param network The control network PvlObject.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readPvlV0005(const PvlObject &network) {
+  void ControlNetVersioner::readPvlV0005(const PvlObject &network, Progress *progress) {
     // initialize the header
     try {
       ControlNetHeaderV0005 header;
@@ -800,12 +851,22 @@ namespace Isis {
       throw IException(e, IException::Io, msg, _FILEINFO_);
     }
 
+    if (progress) {
+      progress->SetText("Reading Control Points...");
+      progress->SetMaximumSteps(network.objects());
+      progress->CheckStatus();
+    }
+
     // initialize the control points
     for (int objectIndex = 0; objectIndex < network.objects(); objectIndex ++) {
       try {
         PvlObject pointObject = network.object(objectIndex);
         ControlPointV0005 point(pointObject);
         m_points.append( createPoint(point) );
+
+        if (progress) {
+          progress->CheckStatus();
+        }
       }
       catch (IException &e) {
         QString msg = "Failed to initialize control point at index ["
@@ -822,8 +883,9 @@ namespace Isis {
    *
    * @param header The Pvl network header that contains the version number.
    * @param netFile The filename of the control network file.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readProtobuf(const Pvl &header, const FileName netFile) {
+  void ControlNetVersioner::readProtobuf(const Pvl &header, const FileName netFile, Progress *progress) {
     int version = 1;
 
     const PvlObject &protoBuf = header.findObject("ProtoBuffer");
@@ -834,13 +896,13 @@ namespace Isis {
     }
     switch ( version ) {
       case 1:
-        readProtobufV0001(header, netFile);
+        readProtobufV0001(header, netFile, progress);
         break;
       case 2:
-        readProtobufV0002(header, netFile);
+        readProtobufV0002(header, netFile, progress);
         break;
       case 5:
-        readProtobufV0005(header, netFile);
+        readProtobufV0005(header, netFile, progress);
         break;
       default:
         QString msg = "The Protobuf file version [" + toString(version)
@@ -855,8 +917,9 @@ namespace Isis {
    *  converted into a control network.
    *
    * @param netFile The filename of the control network file.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readProtobufV0001(const Pvl &header, const FileName netFile) {
+  void ControlNetVersioner::readProtobufV0001(const Pvl &header, const FileName netFile, Progress *progress) {
     const PvlObject &protoBufferInfo = header.findObject("ProtoBuffer");
     const PvlObject &protoBufferCore = protoBufferInfo.findObject("Core");
 
@@ -939,6 +1002,12 @@ namespace Isis {
       throw IException(e, IException::User, msg, _FILEINFO_);
     }
 
+    if (progress) {
+      progress->SetText("Reading Control Points...");
+      progress->SetMaximumSteps( protoNet.points_size() );
+      progress->CheckStatus();
+    }
+
     // Create the control points
     for (int i = 0; i < protoNet.points_size(); i++) {
       try {
@@ -948,6 +1017,11 @@ namespace Isis {
               protoPointLogData(new ControlNetLogDataProtoV0001_Point(protoLogData.points(i)));
         ControlPointV0002 point(protoPoint, protoPointLogData);
         m_points.append( createPoint(point) );
+
+        if (progress) {
+          progress->CheckStatus();
+        }
+
       }
       catch (IException &e) {
         QString msg = "Failed to convert version 1 protobuf control point at index ["
@@ -963,8 +1037,9 @@ namespace Isis {
    *  converted into a control network.
    *
    * @param netFile The filename of the control network file.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readProtobufV0002(const Pvl &header, const FileName netFile) {
+  void ControlNetVersioner::readProtobufV0002(const Pvl &header, const FileName netFile, Progress *progress) {
     // read the header protobuf object
     const PvlObject &protoBufferInfo = header.findObject("ProtoBuffer");
     const PvlObject &protoBufferCore = protoBufferInfo.findObject("Core");
@@ -1030,6 +1105,13 @@ namespace Isis {
     input.seekg(filePos, ios::beg);
     IstreamInputStream pointInStream(&input);
     int numPoints = protoHeader.pointmessagesizes_size();
+
+    if (progress) {
+      progress->SetText("Reading Control Points...");
+      progress->SetMaximumSteps(numPoints);
+      progress->CheckStatus();
+    }
+
     for (int pointIndex = 0; pointIndex < numPoints; pointIndex ++) {
       QSharedPointer<ControlPointFileEntryV0002> newPoint(new ControlPointFileEntryV0002);
 
@@ -1051,6 +1133,11 @@ namespace Isis {
       try {
         ControlPointV0004 point(newPoint);
         m_points.append( createPoint(point) );
+
+        if (progress) {
+          progress->CheckStatus();
+        }
+
       }
       catch (IException &e) {
         QString msg = "Failed to convert protobuf version 2 control point at index ["
@@ -1066,8 +1153,9 @@ namespace Isis {
    *  converted into a control network.
    *
    * @param netFile The filename of the control network file.
+   * @param progress The progress object to track reading points.
    */
-  void ControlNetVersioner::readProtobufV0005(const Pvl &header, const FileName netFile) {
+  void ControlNetVersioner::readProtobufV0005(const Pvl &header, const FileName netFile, Progress *progress) {
     // read the header protobuf object
     const PvlObject &protoBufferInfo = header.findObject("ProtoBuffer");
     const PvlObject &protoBufferCore = protoBufferInfo.findObject("Core");
@@ -1141,6 +1229,28 @@ namespace Isis {
 
     IstreamInputStream pointInStream(&input);
 
+    BigInt numberOfPoints = 0;
+
+    if ( header.hasGroup("ControlNetworkInfo") ) {
+      const PvlGroup &networkInfo = header.findGroup("ControlNetworkInfo");
+
+      if ( networkInfo.hasKeyword("NumberOfPoints") ) {
+        try {
+          numberOfPoints = networkInfo["NumberOfPoints"];
+        }
+        catch (...) {
+          std::cout << "Number of points not found." << std::endl;
+          numberOfPoints = 0;
+        }
+      }
+    }
+
+    if (progress && numberOfPoints != 0) {
+      progress->SetText("Reading Control Points...");
+      progress->SetMaximumSteps(numberOfPoints);
+      progress->CheckStatus();
+    }
+
     int pointIndex = -1;
     while (pointInStream.ByteCount() < pointsLength) {
       pointIndex += 1;
@@ -1168,6 +1278,11 @@ namespace Isis {
       try {
         ControlPointV0005 point(newPoint);
         m_points.append( createPoint(point) );
+
+        if (progress && numberOfPoints != 0) {
+          progress->CheckStatus();
+        }
+
       }
       catch (IException &e) {
         QString msg = "Failed to convert protobuf version 2 control point at index ["
