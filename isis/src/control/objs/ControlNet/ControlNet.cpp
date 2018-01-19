@@ -1213,7 +1213,7 @@ namespace Isis {
    *
    * @author Sharmila Prasad (10/6/2010)
    *
-   * @return std::string
+   * @return QString
    */
   QString ControlNet::CreatedDate() const {
     return p_created;
@@ -1768,7 +1768,7 @@ namespace Isis {
     }
 
     p_targetName = target;
-    p_targetRadii = radii.toStdVector();
+    p_targetRadii = radii;
 
   }
 
@@ -1917,7 +1917,7 @@ namespace Isis {
    * @returns the radii of the target body
    */
   std::vector<Distance> ControlNet::GetTargetRadii() {
-    return p_targetRadii;
+    return p_targetRadii.toStdVector();
   }
 
 
