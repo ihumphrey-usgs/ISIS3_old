@@ -56,8 +56,7 @@ namespace Isis {
     // needs changing...
 
     #ifdef Q_OS_LINUX
-    Display *xDisplay = XOpenDisplay(NULL);
-    if (!xDisplay) {
+    if (!XOpenDisplay(NULL)) {
       std::cerr << "cannot connect to X server...\n\n"
           "Do you have an X server running?\n\n"
           "If yes then...\n\n"
@@ -70,7 +69,7 @@ namespace Isis {
       abort();
     }
     else {
-      XCloseDisplay(xDisplay);
+      XCloseDisplay(NULL);
     }
     #endif
   }
