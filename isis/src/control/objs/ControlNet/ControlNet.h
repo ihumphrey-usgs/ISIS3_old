@@ -27,9 +27,6 @@
 #include <QMetaType>
 #include <QObject> // parent class
 #include <QSharedPointer>
-
-#include "ControlNetFile.h"
-
 #include <QString>
 #include <QMap>
 #include <QVector>
@@ -48,6 +45,7 @@ namespace Isis {
   class ControlCubeGraphNode;
   class Distance;
   class Progress;
+  class Pvl;
   class SerialNumberList;
 
   /**
@@ -206,6 +204,11 @@ namespace Isis {
    *                           being used anywhere. Fixes #5068.
    *   @history 2017-12-12 Kristin Berry - Updated to use QMap and QVector rather than std::map
    *                            and std::vector. Fixes #5259.
+   *   @history 2017-12-18 Adam Goins - Added GetLastModified() accessor. References #5258.
+   *   @history 2017-12-21 Jesse Mapel - Modified read and write methods to use the refactored
+   *                           ControlNetVersioner instead of directly parsing the protobuf
+   *                           objects from the LatestControlNetFile.
+   *   @history 2018-01-12 Adam Goins - Added Progress support back to Read methods.
    */
   class ControlNet : public QObject {
       Q_OBJECT
@@ -253,7 +256,7 @@ namespace Isis {
       ControlPoint *GetPoint(QString pointId);
       const ControlPoint *GetPoint(int index) const;
       ControlPoint *GetPoint(int index);
-      
+
       const ControlCubeGraphNode *getGraphNode(QString serialNumber) const;
       ControlCubeGraphNode *getGraphNode(QString serialNumber);
 
@@ -280,6 +283,7 @@ namespace Isis {
       int GetNumValidPoints();
       QString GetTarget() const;
       QString GetUserName() const;
+      QString GetLastModified() const;
       QList< ControlPoint * > GetPoints();
       QList< QString > GetPointIds() const;
       std::vector<Distance> GetTargetRadii();
@@ -333,7 +337,7 @@ namespace Isis {
        *
        * @internal
        */
-      class ControlMeasureLessThanFunctor : 
+      class ControlMeasureLessThanFunctor :
           public std::binary_function<ControlMeasure* const &,
           ControlMeasure * const &, bool > {
         public:
@@ -344,9 +348,9 @@ namespace Isis {
             this->m_accessor = other.m_accessor;
           }
           ~ControlMeasureLessThanFunctor() {}
-            
+
           bool operator()(ControlMeasure* const &, ControlMeasure* const &);
-          ControlMeasureLessThanFunctor & operator=(ControlMeasureLessThanFunctor const &other); 
+          ControlMeasureLessThanFunctor & operator=(ControlMeasureLessThanFunctor const &other);
 
         private:
           double(ControlMeasure::*m_accessor)() const;
@@ -361,7 +365,7 @@ namespace Isis {
        *
        * @author ????-??-?? Unknown
        *
-       * @internal 
+       * @internal
        */
       class ControlVertex {
         public:
@@ -441,7 +445,7 @@ namespace Isis {
       QVector<Isis::Camera *> p_cameraList; //!< Vector of image number to camera
       QVector<Distance> p_targetRadii;        //!< Radii of target body
 
-      bool m_ownPoints; //!< Specifies ownership of point list. True if owned by this object. 
+      bool m_ownPoints; //!< Specifies ownership of point list. True if owned by this object.
   };
 
   //! This typedef is for future implementation of target body

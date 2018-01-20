@@ -2,8 +2,6 @@
 
 #include <QVariant>
 
-#include "ControlNetFileV0001.pb.h"
-#include "ControlNetFileV0002.pb.h"
 #include "PvlKeyword.h"
 #include "SpecialPixel.h"
 
@@ -57,42 +55,12 @@ namespace Isis {
       p_numericalValue = toDouble(keywordRep[0]);
   }
 
-
-  /**
-   * This creates an instance based on the protocol buffer. This assumes the
-   *   protocol buffer is correct and does no extra validation.
-   *
-   * @param protoBuf The protocol buffer version of a log data
-   */
-  ControlMeasureLogData::ControlMeasureLogData(
-      const ControlNetLogDataProtoV0001_Point_Measure_DataEntry &protoBuf) {
-    p_dataType = (NumericLogDataType)protoBuf.datatype();
-    p_numericalValue = protoBuf.datavalue();
-  }
-
-
-  /**
-   * This creates an instance based on the protocol buffer. This assumes the
-   *   protocol buffer is correct and does no extra validation.
-   *
-   * @param protoBuf The protocol buffer version of a log data
-   */
-  ControlMeasureLogData::ControlMeasureLogData(
-      const ControlPointFileEntryV0002_Measure_MeasureLogData &protoBuf) {
-    if(protoBuf.has_doubledatatype()) {
-      p_dataType = (NumericLogDataType)protoBuf.doubledatatype();
-      p_numericalValue = protoBuf.doubledatavalue();
-    }
-  }
-
-
   /**
    * Copy constructor.
    *
    * @param other The instance to copy into this one.
    */
-  ControlMeasureLogData::ControlMeasureLogData(const ControlMeasureLogData&
-      other) {
+  ControlMeasureLogData::ControlMeasureLogData(const ControlMeasureLogData &other) {
     p_dataType = other.p_dataType;
     p_numericalValue = other.p_numericalValue;
   }
@@ -192,29 +160,6 @@ namespace Isis {
     else
       return PvlKeyword();
   }
-
-
-  /**
-   * This converts the log data to a protocol buffer object. This should be
-   *   understandable by the constructor that takes a protocol buffer object.
-   *
-   * @return A protocol buffer representation of this log data
-   */
-  ControlPointFileEntryV0002_Measure_MeasureLogData
-      ControlMeasureLogData::ToProtocolBuffer() const {
-    if(!IsValid()) {
-      IString msg = "Cannot write an invalid log data entry to binary format";
-      throw IException(IException::Programmer, msg, _FILEINFO_);
-    }
-
-    ControlPointFileEntryV0002_Measure_MeasureLogData protoBufDataEntry;
-
-    protoBufDataEntry.set_doubledatatype(p_dataType);
-    protoBufDataEntry.set_doubledatavalue(p_numericalValue);
-
-    return protoBufDataEntry;
-  }
-
 
   /**
    * This converts a string to a log data type and is useful for converting Pvl

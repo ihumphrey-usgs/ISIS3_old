@@ -28,6 +28,8 @@ object_script.*.Debug
 *_plugin_import.cpp
 *.moc
 ui_*.h
+*.pb.cc
+*.pb.h
 
 */3rdParty/*
 !*/3rdParty/Makefile
